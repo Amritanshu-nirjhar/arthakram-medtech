@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { getStats } from '../api.js'
 
 const STAT_TILES = [
-  { key: 'reminders_created', label: 'Created', format: fmtCount },
-  { key: 'reminders_sent', label: 'Sent', format: fmtCount },
-  { key: 'reminders_confirmed', label: 'Confirmed', format: fmtCount },
-  { key: 'reminders_visited', label: 'Visited', format: fmtCount },
+  { key: 'total_reminders', label: 'Created', format: fmtCount },
+  { key: 'sent', label: 'Sent', format: fmtCount },
+  { key: 'confirmed', label: 'Confirmed', format: fmtCount },
+  { key: 'visited', label: 'Visited', format: fmtCount },
   { key: 'avg_doctor_seconds', label: 'Avg doctor time', format: fmtSeconds },
 ]
 
