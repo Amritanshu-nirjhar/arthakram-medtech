@@ -1,0 +1,12 @@
+.env
+*.env
+!.env.example
+CLAUDE_CODE_PROMPT.md
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+node_modules/
+dist/
+.DS_Store
