@@ -1,1 +1,68 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+
+  --color-bg: #f6f7f5;
+  --color-surface: #ffffff;
+  --color-ink: #1b2320;
+  --color-ink-soft: #5b6861;
+  --color-line: #dce2de;
+  --color-accent: #0f6e5c;
+  --color-accent-dark: #0b4a3d;
+  --color-accent-soft: #e3f1ec;
+  --color-warn: #b6531f;
+  --color-warn-soft: #f8e7dd;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(15, 110, 92, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(15, 110, 92, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(15, 110, 92, 0);
+  }
+}
+
+.mic-listening {
+  animation: pulse-ring 1.6s ease-out infinite;
+}
+
+@keyframes toast-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.toast-pop {
+  animation: toast-pop 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic-listening,
+  .toast-pop {
+    animation: none;
+  }
+}
