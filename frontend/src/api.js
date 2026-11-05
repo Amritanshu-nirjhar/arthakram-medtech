@@ -3,7 +3,7 @@
 // BASE_URL at the real backend) once it is running — nothing else in the
 // app needs to change.
 
-const USE_MOCK = true
+const USE_MOCK = false
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 // ---------------------------------------------------------------------------
