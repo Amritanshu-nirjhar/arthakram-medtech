@@ -185,8 +185,10 @@ function StickyStory() {
 
       <div className="mt-16 grid gap-10 md:grid-cols-2 md:gap-20">
         <div className="hidden md:block">
-          <div className="sticky top-[calc(50vh-280px)]">
-            <Phone step={active} />
+          <div className="sticky top-[calc(50vh-280px)] [perspective:1400px]">
+            <div className="story-phone" style={{ '--a': active }}>
+              <Phone step={active} />
+            </div>
             <div className="mt-6 flex justify-center gap-2">
               {STEPS.map((_, i) => (
                 <span
@@ -220,63 +222,222 @@ function StickyStory() {
   )
 }
 
+// Words of the doctor's spoken note; `strike` marks the medical words the system ignores.
+const NOTE_WORDS = [
+  ['Anil'],
+  ['Verma,'],
+  ['BP', true],
+  ['high,', true],
+  ['started'],
+  ['amlodipine', true],
+  ['5mg,', true],
+  ['review'],
+  ['in'],
+  ['10'],
+  ['days'],
+]
+
+// Mouse-only parallax: writes --mx/--my (-1..1) on the hero; .hd-layer reads them.
+function heroParallax(e) {
+  if (e.pointerType !== 'mouse') return
+  const r = e.currentTarget.getBoundingClientRect()
+  e.currentTarget.style.setProperty('--mx', (((e.clientX - r.left) / r.width - 0.5) * 2).toFixed(3))
+  e.currentTarget.style.setProperty('--my', (((e.clientY - r.top) / r.height - 0.5) * 2).toFixed(3))
+}
+
+function heroParallaxReset(e) {
+  e.currentTarget.style.setProperty('--mx', 0)
+  e.currentTarget.style.setProperty('--my', 0)
+}
+
+// Looping product story: handwritten note -> medical words struck -> 3 fields -> WhatsApp message.
+function HeroDemo() {
+  let strikeIdx = 0
+  return (
+    <div className="hd-scene rise relative mx-auto h-[540px] w-full max-w-[540px] sm:h-[580px]" style={{ '--i': 4 }} aria-hidden>
+      <div className="hd-stage absolute inset-0">
+      {/* 1. the doctor's note */}
+      <div className="hd-layer absolute left-0 top-0 w-[88%] sm:w-[80%]" style={{ '--z': 0 }}>
+        <div
+          className="hd-float relative rotate-[-4deg] overflow-hidden rounded-[1.5rem] border border-line bg-surface px-6 pb-12 pt-5 shadow-[0_30px_60px_-30px_oklch(0.22_0.035_265/0.45)] sm:pl-14"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(to bottom, transparent 0 33px, oklch(0.55 0.08 250 / 0.12) 33px 34px)',
+            backgroundPosition: '0 22px',
+          }}
+        >
+          <span className="absolute bottom-0 left-9 top-0 hidden w-px bg-accent/35 sm:block" />
+          <div className="flex items-baseline justify-between text-[11px] uppercase tracking-[0.18em] text-ink-soft">
+            <span>
+              <span className="font-display text-lg font-extrabold normal-case tracking-tight text-accent">Rx</span>{' '}
+              Dr. Sharma · OPD
+            </span>
+            <span className="font-mono">10:42</span>
+          </div>
+          <p className="hand mt-3 text-[1.7rem] leading-[34px] text-ink sm:text-[2rem]">
+            {NOTE_WORDS.map(([w, strike], i) => (
+              <span key={i}>
+                <span
+                  className={`hd-word${strike ? ' hd-strike' : ''}`}
+                  style={{ '--w': i, '--s': strike ? strikeIdx++ : 0 }}
+                >
+                  {w}
+                </span>{' '}
+              </span>
+            ))}
+          </p>
+          <span className="hd-stamp absolute bottom-3 right-5 rotate-[-10deg] rounded-md border-2 border-accent px-2.5 py-1 font-display text-xs font-extrabold uppercase tracking-[0.18em] text-accent">
+            Approved · 8s
+          </span>
+        </div>
+      </div>
+
+      {/* 2. the only three things extracted */}
+      <div className="hd-layer absolute right-0 top-[45%] sm:top-[40%]" style={{ '--z': 130 }}>
+        <div className="hd-float flex flex-col items-end gap-2.5" style={{ '--f': 1 }}>
+        {[
+          ['Patient', 'Anil Verma'],
+          ['Date', prettyDate(DEMO_DATE)],
+          ['Visit', 'follow-up'],
+        ].map(([k, v], i) => (
+          <div
+            key={k}
+            className="hd-chip flex items-center gap-2.5 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-4 shadow-[0_14px_30px_-16px_oklch(0.22_0.035_265/0.5)]"
+            style={{ '--c': i, rotate: `${[2, -1.5, 1][i]}deg` }}
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-lime text-ink">
+              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.4">
+                <path d="M3 8.5 6.5 12 13 4.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.16em] text-ink-soft">{k}</span>
+            <span className="text-sm font-semibold text-ink">{v}</span>
+          </div>
+        ))}
+        </div>
+      </div>
+
+      {/* 3. what the patient actually receives */}
+      <div className="hd-layer absolute bottom-0 left-[4%] w-[90%] sm:w-[78%]" style={{ '--z': 70 }}>
+        <div className="hd-float" style={{ '--f': 2 }}>
+        <div className="hd-msg rotate-[2deg] rounded-[1.75rem] border border-line bg-surface p-4 shadow-[0_40px_80px_-30px_oklch(0.22_0.035_265/0.55)]">
+          <div className="flex items-center gap-3 border-b border-line pb-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[oklch(0.72_0.17_150)] text-xs font-bold text-white">
+              SF
+            </span>
+            <div className="leading-tight">
+              <p className="text-sm font-semibold text-ink">Sharma Family Clinic</p>
+              <p className="text-[11px] text-ink-soft">WhatsApp · just now</p>
+            </div>
+          </div>
+          <div className="mt-3 rounded-2xl rounded-tl-sm bg-[oklch(0.93_0.06_140)] px-3.5 py-3 text-[13px] leading-relaxed text-ink">
+            {DEMO_MESSAGE}
+            <span className="mt-1 flex items-center justify-end gap-1 text-[10px] text-ink-soft">
+              10:42
+              <svg viewBox="0 0 18 12" className="hd-ticks h-3 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M1 6.5 4.5 10 11 2M7 9l1 1 6.5-8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </div>
+        </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   useRevealAll()
+  const heroRef = useRef(null)
+  useEffect(() => {
+    const el = heroRef.current
+    const scene = el.querySelector('.hd-scene')
+    let raf = 0
+    // 0 while the 3D scene sits below the nav, 1 once it has scrolled fully past it
+    const update = () => {
+      raf = 0
+      const r = scene.getBoundingClientRect()
+      el.style.setProperty('--sp', Math.min(Math.max((80 - r.top) / r.height, 0), 1).toFixed(3))
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(raf)
+    }
+  }, [])
 
   return (
     <div className="overflow-x-clip">
       <div className="scroll-progress" aria-hidden />
 
       {/* HERO */}
-      <section className="relative mx-auto flex min-h-[calc(100svh-4rem)] max-w-6xl flex-col justify-center px-4 pb-16 pt-10 sm:px-8">
+      <section
+        ref={heroRef}
+        onPointerMove={heroParallax}
+        onPointerLeave={heroParallaxReset}
+        className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-6xl items-center gap-14 px-4 pb-20 pt-8 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10"
+      >
         <div className="pointer-events-none absolute -right-40 top-10 h-[520px] w-[520px] rounded-full bg-accent/15 blur-[120px]" />
-        <p className="rise text-xs uppercase tracking-[0.25em] text-ink-soft">
-          For busy clinics · WhatsApp follow-ups
-        </p>
-        <h1 className="display mt-6 text-[clamp(4.2rem,15vw,13rem)] text-ink">
-          <span className="line">
-            <span style={{ '--i': 0 }}>Fifteen</span>
-          </span>
-          <span className="line">
-            <span style={{ '--i': 1 }}>
-              <em className="text-accent">seconds.</em>
+        <div className="pointer-events-none absolute -left-40 bottom-0 h-[420px] w-[420px] rounded-full bg-lime/30 blur-[120px]" />
+
+        <div className="relative">
+          <p className="rise inline-flex items-center gap-2.5 rounded-full border border-line bg-surface/70 py-1.5 pl-2.5 pr-4 text-xs font-medium text-ink-soft shadow-sm backdrop-blur">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
             </span>
-          </span>
-        </h1>
-        <p
-          className="hand rise pointer-events-none absolute right-8 top-[38%] hidden rotate-[-6deg] text-4xl leading-none text-accent lg:block"
-          style={{ '--i': 5 }}
-          aria-hidden
-        >
-          one line,
-          <br />
-          two taps.
-          <svg viewBox="0 0 120 60" className="mt-2 h-14 w-28" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-            <path d="M110 8 C 80 10, 40 20, 14 48" />
-            <path d="M14 48 L 16 30 M14 48 L 32 44" />
-          </svg>
-        </p>
-        <div className="mt-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-          <p className="rise max-w-md text-lg leading-relaxed text-ink-soft sm:text-xl" style={{ '--i': 6 }}>
-            The doctor says one line. The patient gets a WhatsApp reminder. Nobody fills a form, and nobody forgets a
-            follow-up again.
+            For Indian clinics · WhatsApp follow-ups
           </p>
-          <div className="rise flex flex-wrap gap-3" style={{ '--i': 8 }}>
+          <h1 className="display mt-7 text-[clamp(4rem,14vw,9rem)] text-ink">
+            <span className="line">
+              <span style={{ '--i': 0 }}>Fifteen</span>
+            </span>
+            <span className="line">
+              <span style={{ '--i': 1 }}>
+                <em>seconds.</em>
+              </span>
+            </span>
+          </h1>
+          <p className="rise mt-8 max-w-lg text-lg leading-relaxed text-ink-soft sm:text-xl" style={{ '--i': 6 }}>
+            The doctor says one line. The patient gets a WhatsApp reminder.{' '}
+            <span className="text-ink">No forms, no missed follow-ups.</span>
+          </p>
+          <div className="rise mt-9 flex flex-wrap gap-3" style={{ '--i': 8 }}>
             <Link
               to="/doctor"
-              className="group inline-flex items-center gap-3 rounded-full bg-ink px-7 py-4 text-base font-medium text-white transition-transform duration-200 hover:-translate-y-0.5"
+              className="group inline-flex items-center gap-3 rounded-full bg-ink px-7 py-4 text-base font-medium text-white shadow-[0_18px_40px_-18px_oklch(0.22_0.035_265/0.8)] transition-transform duration-200 hover:-translate-y-0.5"
             >
               <span className="h-2 w-2 rounded-full bg-accent transition-transform group-hover:scale-150" />
               Try the doctor screen
+              <span className="transition-transform group-hover:translate-x-1" aria-hidden>
+                →
+              </span>
             </Link>
             <a
               href="#how"
-              className="inline-flex items-center rounded-full border border-ink/20 px-7 py-4 text-base font-medium text-ink transition-colors hover:border-ink"
+              className="inline-flex items-center rounded-full border border-ink/15 bg-surface/60 px-7 py-4 text-base font-medium text-ink backdrop-blur transition-colors hover:border-ink"
             >
               See how ↓
             </a>
           </div>
+          <ul className="rise mt-10 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-soft" style={{ '--i': 10 }}>
+            {['3-layer safety', 'Works in Hinglish', '₹999 / month', 'No forms'].map((t) => (
+              <li key={t} className="flex items-center gap-1.5">
+                <svg viewBox="0 0 16 16" className="h-4 w-4 text-accent" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                  <path d="M3 8.5 6.5 12 13 4.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t}
+              </li>
+            ))}
+          </ul>
         </div>
+
+        <HeroDemo />
       </section>
 
       {/* MARQUEE of real test notes */}
@@ -375,7 +536,7 @@ export default function Home() {
               key={row.label}
               data-reveal
               style={{ '--i': i }}
-              className="grid items-baseline gap-2 py-8 md:grid-cols-12"
+              className="flip grid items-baseline gap-2 py-8 md:grid-cols-12"
             >
               <p
                 className={`display text-[clamp(3.5rem,9vw,8rem)] md:col-span-6 ${row.hi ? 'text-accent' : 'text-ink'}`}

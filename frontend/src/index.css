@@ -88,7 +88,7 @@ body::after {
   font-family: var(--font-display);
   font-weight: 800;
   font-variation-settings: "opsz" 96;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
   line-height: 0.88;
 }
 /* the accent word in every big heading is "handwritten" in stamp red */
@@ -318,5 +318,190 @@ body::after {
   }
   .in .strike {
     background-size: 100% 2px;
+  }
+}
+
+
+/* ---------- hero demo: one 7s loop, staggered keyframes ---------- */
+/* 3D scene: pointer tilts the stage, scrolling out (--sp 0..1) tilts it back and pulls the layers apart */
+.hd-scene {
+  perspective: 1200px;
+}
+.hd-stage {
+  transform-style: preserve-3d;
+  transform: translateY(calc(var(--sp, 0) * -40px))
+    rotateX(calc(6deg + var(--my, 0) * -7deg + var(--sp, 0) * 26deg))
+    rotateY(calc(-10deg + var(--mx, 0) * 12deg));
+  transition: transform 700ms var(--ease-out-expo);
+}
+.hd-layer {
+  transform: translateZ(calc(var(--z, 0) * (1 + var(--sp, 0) * 2.2) * 1px));
+  transition: transform 700ms var(--ease-out-expo);
+}
+.hd-float {
+  animation: hd-float 6s ease-in-out infinite alternate;
+  animation-delay: calc(var(--f, 0) * -2s);
+}
+@keyframes hd-float {
+  to {
+    transform: translateY(-12px);
+  }
+}
+
+@media (max-width: 639px) {
+  .hd-layer {
+    transform: translateZ(calc(var(--z, 0) * 0.45 * (1 + var(--sp, 0) * 2.2) * 1px));
+  }
+}
+
+/* sticky story phone turns toward each step */
+.story-phone {
+  transform: rotateY(calc(18deg - var(--a, 0) * 12deg)) rotateX(6deg);
+  transition: transform 1000ms var(--ease-out-expo);
+}
+
+/* numbers: rows flip up in 3D */
+[data-reveal].flip {
+  transform: perspective(900px) rotateX(60deg) translateY(30px);
+  transform-origin: 50% 100%;
+}
+[data-reveal].flip.in {
+  transform: none;
+}
+.hd-word {
+  display: inline-block;
+  animation: hd-word 7s var(--ease-out-expo) infinite both;
+  animation-delay: calc(var(--w) * 110ms + 400ms);
+}
+.hd-strike {
+  background-image: linear-gradient(var(--color-accent), var(--color-accent));
+  background-repeat: no-repeat;
+  background-position: 0 58%;
+  background-size: 100% 3px;
+  color: var(--color-ink-soft);
+}
+.hd-word.hd-strike {
+  animation:
+    hd-word 7s var(--ease-out-expo) infinite both,
+    hd-strike 7s var(--ease-out-expo) infinite both;
+  animation-delay:
+    calc(var(--w) * 110ms + 400ms),
+    calc(var(--s) * 160ms);
+}
+.hd-chip {
+  animation: hd-chip 7s var(--ease-out-expo) infinite both;
+  animation-delay: calc(var(--c) * 150ms);
+}
+.hd-stamp {
+  animation: hd-stamp 7s var(--ease-out-expo) infinite both;
+}
+.hd-msg {
+  animation: hd-msg 7s var(--ease-out-expo) infinite both;
+}
+.hd-ticks {
+  color: oklch(0.65 0.14 235);
+  animation: hd-ticks 7s linear infinite both;
+}
+@keyframes hd-word {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+  5%,
+  90% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes hd-strike {
+  0%,
+  36% {
+    background-size: 0% 3px;
+    color: var(--color-ink);
+  }
+  42%,
+  92% {
+    background-size: 100% 3px;
+    color: var(--color-ink-soft);
+  }
+  97%,
+  100% {
+    background-size: 0% 3px;
+  }
+}
+@keyframes hd-chip {
+  0%,
+  44% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+  50%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  97%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes hd-stamp {
+  0%,
+  58% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+  62% {
+    opacity: 1;
+    transform: scale(0.94);
+  }
+  65%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  97%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes hd-msg {
+  0%,
+  64% {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  71%,
+  92% {
+    opacity: 1;
+    transform: none;
+  }
+  98%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes hd-ticks {
+  0%,
+  80% {
+    color: var(--color-ink-soft);
+  }
+  84%,
+  100% {
+    color: oklch(0.65 0.14 235);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hd-stage,
+  .hd-layer,
+  .story-phone,
+  [data-reveal].flip {
+    transform: none !important;
   }
 }
