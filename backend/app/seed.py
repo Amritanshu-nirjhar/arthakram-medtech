@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from sqlmodel import Session
 
 from .db import DB_PATH, create_db_and_tables, engine
-from .dates import pretty_date
+from .dates import adjust_for_sunday, pretty_date
 from .models import Patient, Reminder, ReminderStatus, VisitType
 from .templates import render_message
 
@@ -99,14 +99,14 @@ def _build_patients(today: date) -> list[Patient]:
 # receptionist queue and dashboard aren't empty (BUILD_PLAN section 10).
 # (patient_name, days_offset_from_today, visit_type, status)
 REMINDER_SEED = [
-    ("Ramesh Kumar", 3, VisitType.follow_up, ReminderStatus.approved),
+    ("Ramesh Kumar", 0, VisitType.follow_up, ReminderStatus.approved),
     ("Priya Sharma", 1, VisitType.report_review, ReminderStatus.approved),
     ("Anil Verma", -2, VisitType.follow_up, ReminderStatus.confirmed),
     ("Sunita Devi", 7, VisitType.follow_up, ReminderStatus.sent),
     ("Meena Gupta", -5, VisitType.report_review, ReminderStatus.visited),
     ("Rahul Singh", -10, VisitType.follow_up, ReminderStatus.missed),
     ("Neha Reddy", 14, VisitType.routine_check, ReminderStatus.approved),
-    ("Amit Kumar", 2, VisitType.follow_up, ReminderStatus.sent),
+    ("Amit Kumar", 0, VisitType.follow_up, ReminderStatus.sent),
     ("Amit Patel", 5, VisitType.report_review, ReminderStatus.confirmed),
     ("Vikram Rao", -1, VisitType.routine_check, ReminderStatus.visited),
 ]
@@ -133,7 +133,7 @@ def seed() -> None:
 
         for name, offset, visit_type, status in REMINDER_SEED:
             patient = by_name[name]
-            follow_up_date = today + timedelta(days=offset)
+            follow_up_date = adjust_for_sunday(today + timedelta(days=offset))
             message = render_message(
                 first_name=patient.name.split()[0],
                 date_pretty=pretty_date(follow_up_date),

@@ -226,7 +226,7 @@ def extract(note: str, today: Optional[date] = None) -> ExtractionResult:
         today = date.today()
 
     api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
-    model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5")
+    model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
 
     if api_key and anthropic is not None:
         try:

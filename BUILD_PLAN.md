@@ -216,6 +216,7 @@ Hi {first_name}, this is a reminder from {clinic_name}. {doctor_name} would like
 | POST | `/reminders` | approve: body `{patient_id, follow_up_date, visit_type, doctor_seconds}` → creates reminder with status `approved` |
 | GET | `/reminders?status=` | receptionist queue |
 | PATCH | `/reminders/{id}` | update status (`sent`, `confirmed`, `visited`, `missed`) |
+| DELETE | `/reminders/{id}` | undo an approve; only while status is `approved` (409 otherwise) → 204 |
 | GET | `/patients?search=` | quick patient search (for the tap-to-choose fallback) |
 | GET | `/stats` | dashboard numbers |
 

@@ -171,3 +171,19 @@ def test_stats_shape(client):
     body = r.json()
     for key in ("total_reminders", "approved", "sent", "confirmed", "visited", "missed", "avg_doctor_seconds"):
         assert key in body
+
+
+def test_reminder_delete_undo_only_while_approved(client):
+    payload = {
+        "patient_id": 1,
+        "follow_up_date": (date.today() + timedelta(days=8)).isoformat(),
+        "visit_type": "follow_up",
+        "doctor_seconds": 6,
+    }
+    rid = client.post("/reminders", json=payload).json()["id"]
+    assert client.delete(f"/reminders/{rid}").status_code == 204
+    assert client.delete(f"/reminders/{rid}").status_code == 404
+
+    rid = client.post("/reminders", json=payload).json()["id"]
+    client.patch(f"/reminders/{rid}", json={"status": "sent"})
+    assert client.delete(f"/reminders/{rid}").status_code == 409

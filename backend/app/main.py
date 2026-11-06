@@ -296,6 +296,18 @@ def update_reminder_status(
     return _reminder_out(reminder, patient)
 
 
+@app.delete("/reminders/{reminder_id}", status_code=204)
+def delete_reminder(reminder_id: int, session: Session = Depends(get_session)):
+    """Undo an approve. Only allowed before the reminder is sent."""
+    reminder = session.get(Reminder, reminder_id)
+    if not reminder:
+        raise HTTPException(status_code=404, detail="reminder not found")
+    if reminder.status != ReminderStatus.approved:
+        raise HTTPException(status_code=409, detail="reminder already sent, cannot undo")
+    session.delete(reminder)
+    session.commit()
+
+
 # --------------------------------------------------------------------------
 # GET /patients?search=
 # --------------------------------------------------------------------------

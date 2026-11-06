@@ -20,12 +20,21 @@ const DEFAULT_INPUTS = {
 }
 
 const FIELDS = [
-  { key: 'patientsPerDay', label: 'Patients / day', min: 0, step: 1 },
+  { key: 'patientsPerDay', label: 'Patients / day', min: 0, max: 200, step: 1 },
   { key: 'workingDays', label: 'Working days / month', min: 0, max: 31, step: 1 },
   { key: 'pctNeedingFollowUp', label: '% needing follow-up', min: 0, max: 100, step: 1 },
   { key: 'currentMissRate', label: 'Current miss rate (%)', min: 0, max: 100, step: 1 },
-  { key: 'consultFee', label: 'Consult fee (₹)', min: 0, step: 50 },
+  { key: 'consultFee', label: 'Consult fee (₹)', min: 0, max: 3000, step: 50 },
   { key: 'targetMissRate', label: 'Target miss rate (%)', min: 0, max: 100, step: 1 },
+]
+
+// Current-status breakdown (each reminder counted once, in its present status).
+const STATUS_SEGMENTS = [
+  { key: 'approved', label: 'Waiting to send', className: 'bg-line' },
+  { key: 'sent', label: 'Sent', className: 'bg-accent-soft' },
+  { key: 'confirmed', label: 'Confirmed', className: 'bg-accent' },
+  { key: 'visited', label: 'Visited', className: 'bg-ink' },
+  { key: 'missed', label: 'Missed', className: 'bg-warn' },
 ]
 
 function fmtNum(n) {
@@ -133,7 +142,7 @@ export default function Dashboard() {
               <div
                 key={tile.key}
                 style={{ '--i': i }}
-                className={`rise rounded-3xl border p-5 ${i === 4 ? 'border-transparent bg-lime' : 'border-line bg-surface'}`}
+                className={`rise rounded-3xl border p-5 ${i === 4 ? 'col-span-2 border-transparent bg-lime sm:col-span-1' : 'border-line bg-surface'}`}
               >
                 <p className="display text-5xl text-ink">
                   {stats[tile.key] == null ? '—' : <CountUp to={stats[tile.key]} />}
@@ -142,6 +151,30 @@ export default function Dashboard() {
                 <p className="mt-2 text-[11px] uppercase tracking-[0.15em] text-ink-soft">{tile.label}</p>
               </div>
             ))}
+          </div>
+        )}
+
+        {!loading && !error && stats?.total_reminders > 0 && (
+          <div className="rise mt-4 rounded-3xl border border-line bg-surface p-5 sm:p-6" style={{ '--i': 5 }}>
+            <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Where every reminder is now</p>
+            <div className="mt-4 flex h-4 gap-1 overflow-hidden rounded-full">
+              {STATUS_SEGMENTS.filter((seg) => stats[seg.key] > 0).map((seg) => (
+                <div
+                  key={seg.key}
+                  className={`${seg.className} rounded-full transition-[flex-grow] duration-700`}
+                  style={{ flexGrow: stats[seg.key] }}
+                  title={`${seg.label}: ${stats[seg.key]}`}
+                />
+              ))}
+            </div>
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-soft">
+              {STATUS_SEGMENTS.map((seg) => (
+                <li key={seg.key} className="flex items-center gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${seg.className}`} />
+                  {seg.label} <span className="font-semibold tabular-nums text-ink">{stats[seg.key] ?? 0}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -154,16 +187,19 @@ export default function Dashboard() {
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {FIELDS.map((f) => (
-            <label key={f.key} className="block">
-              <span className="text-xs text-ink-soft">{f.label}</span>
+            <label key={f.key} className="block rounded-2xl bg-bg p-4">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="text-xs text-ink-soft">{f.label}</span>
+                <span className="text-lg font-semibold tabular-nums text-ink">{fmtNum(numOr(inputs[f.key]))}</span>
+              </span>
               <input
-                type="number"
+                type="range"
                 min={f.min}
                 max={f.max}
                 step={f.step}
                 value={inputs[f.key]}
                 onChange={(e) => handleInputChange(f.key, e.target.value)}
-                className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
+                className="mt-3 w-full accent-[var(--color-accent)]"
               />
             </label>
           ))}

@@ -4,7 +4,7 @@
 // app needs to change.
 
 const USE_MOCK = false
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api' // proxied to :8000 by vite.config.js
 
 // ---------------------------------------------------------------------------
 // Shared constants (also used by the mock — these mirror backend/app/templates.py)
@@ -378,6 +378,11 @@ export async function getReminders(status) {
 export async function updateReminderStatus(id, status) {
   if (USE_MOCK) return mockUpdateReminderStatus(id, status)
   return request(`/reminders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
+}
+
+export async function deleteReminder(id) {
+  if (USE_MOCK) return null
+  return request(`/reminders/${id}`, { method: 'DELETE' })
 }
 
 export async function searchPatients(query) {

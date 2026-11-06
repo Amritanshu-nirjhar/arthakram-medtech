@@ -4,6 +4,7 @@ import {
   VISIT_LABELS,
   approveReminder,
   buildMessagePreview,
+  deleteReminder,
   firstNameOf,
   parseNote,
   prettyDate,
@@ -26,6 +27,11 @@ function MicIcon(props) {
     </svg>
   )
 }
+
+const EXAMPLE_NOTES = ['Ramesh Kumar, review after 2 weeks', 'Kavita ko 15 din baad bulao', 'Amit, 1 week']
+const LIMIT_MS = 15000
+const RING_R = 84
+const RING_C = 2 * Math.PI * RING_R
 
 function formatElapsed(ms) {
   const totalSeconds = Math.floor(ms / 1000)
@@ -57,7 +63,10 @@ export default function Doctor() {
 
   const [approving, setApproving] = useState(false)
   const [approveError, setApproveError] = useState(null)
-  const [showToast, setShowToast] = useState(false)
+  // { id, name, snap } of the reminder just approved, while Undo is offered
+  const [lastSaved, setLastSaved] = useState(null)
+  const [toastMsg, setToastMsg] = useState(null)
+  const undoTimerRef = useRef(null)
 
   const [elapsedMs, setElapsedMs] = useState(0)
   const startedAtRef = useRef(null)
@@ -71,6 +80,7 @@ export default function Doctor() {
       if (tickRef.current) clearInterval(tickRef.current)
       recognitionRef.current?.abort?.()
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
     }
   }, [])
 
@@ -241,18 +251,15 @@ export default function Doctor() {
     setApproveError(null)
     try {
       const doctorSeconds = startedAtRef.current ? Math.round((Date.now() - startedAtRef.current) / 1000) : 0
-      await approveReminder({
+      const saved = await approveReminder({
         patient_id: selectedPatient.id,
         follow_up_date: selectedDate,
         visit_type: selectedVisitType,
         doctor_seconds: doctorSeconds,
       })
-      stopTimer()
-      setShowToast(true)
-      setTimeout(() => {
-        setShowToast(false)
-        resetAll()
-      }, 1600)
+      const snap = { noteText, result, candidates, selectedPatientId, selectedDate, selectedVisitType }
+      resetAll() // clear straight away so the next patient can start
+      showToastFor({ id: saved?.id, name: selectedPatient.name, snap }, 5000)
     } catch (err) {
       setApproveError(err.message || 'Could not save — try again.')
     } finally {
@@ -260,9 +267,52 @@ export default function Doctor() {
     }
   }
 
+  function showToastFor(saved, ms, msg = null) {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    setLastSaved(saved)
+    setToastMsg(msg)
+    undoTimerRef.current = setTimeout(() => {
+      setLastSaved(null)
+      setToastMsg(null)
+    }, ms)
+  }
+
+  async function handleUndo() {
+    const saved = lastSaved
+    if (!saved?.id) return
+    try {
+      await deleteReminder(saved.id)
+      const { snap } = saved
+      setNoteText(snap.noteText)
+      setResult(snap.result)
+      setCandidates(snap.candidates)
+      setSelectedPatientId(snap.selectedPatientId)
+      setSelectedDate(snap.selectedDate)
+      setSelectedVisitType(snap.selectedVisitType)
+      setStatus('ready')
+      startTimerIfNeeded()
+      showToastFor(null, 1800, 'Undone, fix and approve again')
+    } catch (err) {
+      showToastFor(null, 2500, err.message || 'Could not undo')
+    }
+  }
+
+  function tryExample(text) {
+    setNoteText(text)
+    startTimerIfNeeded()
+    submitNote(text)
+  }
+
+  const ringProgress = Math.min(elapsedMs / LIMIT_MS, 1)
+  const overLimit = elapsedMs > LIMIT_MS
+
   return (
     <div className="min-h-screen pb-36">
-      <Toast show={showToast} message="Saved ✓" />
+      <Toast
+        show={!!lastSaved || !!toastMsg}
+        message={toastMsg || `Saved ✓ ${lastSaved?.name || ''}`}
+        action={lastSaved ? { label: 'Undo', onClick: handleUndo } : null}
+      />
 
       <div className="mx-auto max-w-md px-4 pt-6">
         <div className="flex flex-col items-center gap-4 pb-8 pt-4 text-center">
@@ -277,9 +327,25 @@ export default function Doctor() {
           >
             ⏱ {formatElapsed(elapsedMs)}
           </div>
+          <div className="relative flex h-48 w-48 items-center justify-center">
+          <svg className="absolute inset-0 -rotate-90" viewBox="0 0 192 192" aria-hidden>
+            <circle cx="96" cy="96" r={RING_R} fill="none" strokeWidth="5" className="stroke-line" />
+            <circle
+              cx="96"
+              cy="96"
+              r={RING_R}
+              fill="none"
+              strokeWidth="5"
+              strokeLinecap="round"
+              strokeDasharray={RING_C}
+              strokeDashoffset={RING_C * (1 - ringProgress)}
+              className={`transition-[stroke-dashoffset] duration-300 ease-linear ${overLimit ? 'stroke-warn' : 'stroke-accent'}`}
+            />
+          </svg>
           <button
             type="button"
             onClick={handleMicTap}
+            aria-label={isListening ? 'Stop listening' : 'Start voice note'}
             disabled={!speechSupported}
             aria-pressed={isListening}
             className={`flex h-36 w-36 items-center justify-center rounded-full text-white shadow-[0_20px_50px_-15px_oklch(0.47_0.09_170/0.7)] transition-all duration-300 hover:scale-105 active:scale-95 ${
@@ -296,6 +362,7 @@ export default function Doctor() {
               <MicIcon className="h-12 w-12" />
             )}
           </button>
+          </div>
           <p className="text-sm text-ink-soft">
             {!speechSupported
               ? 'Voice input is not supported here — type the note below.'
@@ -331,8 +398,33 @@ export default function Doctor() {
           </button>
         </div>
 
+        {status === 'idle' && !noteText && (
+          <div className="pt-3">
+            <p className="text-center text-[11px] uppercase tracking-[0.15em] text-ink-soft">or tap an example</p>
+            <div className="mt-2 flex flex-wrap justify-center gap-2">
+              {EXAMPLE_NOTES.map((n, i) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => tryExample(n)}
+                  style={{ '--i': i }}
+                  className="rise rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink transition-colors hover:border-accent hover:text-accent"
+                >
+                  &ldquo;{n}&rdquo;
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4 pt-4">
-          {status === 'parsing' && <p className="animate-pulse text-center text-sm text-ink-soft">Reading the note…</p>}
+          {status === 'parsing' && (
+            <div className="space-y-3 rounded-3xl border border-line bg-surface p-6" aria-label="Reading the note">
+              {[40, 65, 50].map((w) => (
+                <div key={w} className="h-4 animate-pulse rounded-full bg-line" style={{ width: `${w}%` }} />
+              ))}
+            </div>
+          )}
 
           {status === 'error' && (
             <div className="rounded-lg border border-warn-soft bg-warn-soft p-4 text-sm text-warn">

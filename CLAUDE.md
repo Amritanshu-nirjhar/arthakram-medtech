@@ -23,7 +23,8 @@ A clinic tool: doctor speaks one line ("Ramesh Kumar, review after 2 weeks") →
 - Backend dev: `cd backend && uvicorn app.main:app --reload --port 8000`
 - Backend tests: `cd backend && pytest -q`
 - Reset + seed DB: `cd backend && python -m app.seed`
-- Frontend dev: `cd frontend && npm run dev` (port 5173)
+- Frontend dev: `cd frontend && npm run dev` (port 5173; API proxied at `/api` → :8000)
+- Demo on a phone (mic needs HTTPS): `cd frontend && npm run dev:phone`, open the `https://<laptop-ip>:5173` URL it prints, accept the cert warning
 
 ## How we work
 - The main session orchestrates; subagents in `.claude/agents/` do the work (see BUILD_PLAN section 0).

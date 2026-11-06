@@ -41,9 +41,9 @@ def render_message(
     is plain, non-medical text controlled by us or by the clinic's own env
     config — never the doctor's free-text note.
     """
-    clinic_name = clinic_name or os.getenv("CLINIC_NAME", "the clinic")
-    doctor_name = doctor_name or os.getenv("DOCTOR_NAME", "The doctor")
-    clinic_phone = clinic_phone or os.getenv("CLINIC_PHONE", "")
+    clinic_name = clinic_name or os.getenv("CLINIC_NAME") or "Sharma Family Clinic"
+    doctor_name = doctor_name or os.getenv("DOCTOR_NAME") or "Dr. Sharma"
+    clinic_phone = clinic_phone or os.getenv("CLINIC_PHONE") or "9800000000"
 
     return MESSAGE_TEMPLATE.format(
         first_name=first_name,
