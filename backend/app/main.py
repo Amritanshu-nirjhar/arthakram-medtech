@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone
 from typing import List, Optional
@@ -24,11 +25,32 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    if os.getenv("VERCEL"):
+        from .seed import seed_if_empty
+
+        seed_if_empty()
     stt.warm_up()
     yield
 
 
 app = FastAPI(title="FollowUp API", lifespan=lifespan)
+
+
+class StripApiPrefix:
+    """Vercel routes /api/* to this service with the /api prefix still on the path;
+    the Vite dev proxy does the same. Serve every route at both /x and /api/x."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if scope["type"] == "http" and (path == "/api" or path.startswith("/api/")):
+            scope = dict(scope, path=path[4:] or "/")
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(StripApiPrefix)
 
 app.add_middleware(
     CORSMiddleware,

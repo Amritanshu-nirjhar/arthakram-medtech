@@ -187,3 +187,11 @@ def test_reminder_delete_undo_only_while_approved(client):
     rid = client.post("/reminders", json=payload).json()["id"]
     client.patch(f"/reminders/{rid}", json={"status": "sent"})
     assert client.delete(f"/reminders/{rid}").status_code == 409
+
+
+def test_routes_also_served_under_api_prefix(client):
+    # Vercel forwards /api/* to the backend with the prefix still on the path.
+    assert client.get("/api/health").json()["status"] == "ok"
+    r = client.post("/api/notes/parse", json={"text": "Ramesh Kumar review after 2 weeks"})
+    assert r.status_code == 200 and r.json()["candidates"][0]["name"] == "Ramesh Kumar"
+    assert client.get("/apiary").status_code == 404  # only the exact /api segment is stripped

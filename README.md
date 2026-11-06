@@ -25,6 +25,15 @@ The AI only ever extracts three structured fields. It never writes the patient-f
 
 Voice is transcribed on our own backend with faster-whisper (runs locally, no API key; the "small" model downloads once, about 480 MB, on first start; set WHISPER_MODEL=base for a faster, smaller one). If it is not installed, the app falls back to the browser's speech recognition.
 
+## Deploy (Vercel, one project, two services)
+
+`vercel.json` defines two services: `frontend` (Vite, public at `/`) and `backend` (FastAPI, public at `/api/*`). The browser calls the backend at `/api/...` on the same domain, so no service bindings are needed. Set `ANTHROPIC_API_KEY` (optional) and the `CLINIC_*` / `DOCTOR_NAME` variables in the Vercel project.
+
+- Voice on Vercel uses the browser's speech recognition. Local Whisper (`backend/requirements-voice.txt`) is too large for a Vercel function, and `/api/transcribe` returns 503 there.
+- The SQLite database lives in `/tmp` on Vercel and is re-seeded with the fictional demo data whenever a new function instance starts, so approvals are not durable across instances. Use Postgres for real use.
+
+Test the whole deployment locally with `vercel dev`.
+
 ## Setup
 
 ### Backend

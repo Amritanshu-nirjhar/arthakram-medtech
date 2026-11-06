@@ -1,0 +1,4 @@
+# Optional: local speech-to-text for POST /transcribe (too big for a Vercel function).
+# Without it the app uses the browser's speech recognition instead.
+-r requirements.txt
+faster-whisper

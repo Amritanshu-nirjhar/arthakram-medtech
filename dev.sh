@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 if [ ! -d backend/.venv ]; then
   echo "→ creating backend venv + installing deps (first run only)"
   python3 -m venv backend/.venv
-  backend/.venv/bin/pip install -q -r backend/requirements.txt
+  backend/.venv/bin/pip install -q -r backend/requirements-voice.txt
 fi
 [ -f backend/.env ] || cp backend/.env.example backend/.env
 [ -f backend/followup.db ] || (cd backend && .venv/bin/python -m app.seed)

@@ -12,7 +12,7 @@ import random
 from datetime import date, datetime, timedelta, timezone
 
 from dotenv import load_dotenv
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from .db import DB_PATH, create_db_and_tables, engine
 from .dates import adjust_for_sunday, pretty_date
@@ -117,8 +117,9 @@ def _reset_db_file() -> None:
         os.remove(DB_PATH)
 
 
-def seed() -> None:
-    _reset_db_file()
+def seed(reset: bool = True) -> None:
+    if reset:
+        _reset_db_file()
     create_db_and_tables()
 
     today = date.today()
@@ -161,6 +162,15 @@ def seed() -> None:
 
     print(f"Seeded {len(patients)} patients and {len(REMINDER_SEED)} reminders.")
     print(f"Database: {DB_PATH}")
+
+
+def seed_if_empty() -> None:
+    """Cold start on Vercel: /tmp is empty, so load the fictional demo data once."""
+    create_db_and_tables()
+    with Session(engine) as session:
+        if session.exec(select(Patient)).first():
+            return
+    seed(reset=False)
 
 
 if __name__ == "__main__":
