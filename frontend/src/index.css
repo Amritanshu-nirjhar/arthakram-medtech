@@ -505,3 +505,62 @@ body::after {
     transform: none !important;
   }
 }
+
+/* ---------- APPROVED stamp on the doctor's card ---------- */
+.stamp {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 6vw, 2rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  border: 4px solid currentColor;
+  border-radius: 14px;
+  padding: 0.35em 0.7em;
+  transform: rotate(-9deg);
+  background: oklch(0.99 0.008 85 / 0.85);
+  mix-blend-mode: multiply;
+  animation: stamp-in 380ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: rotate(-9deg) scale(2.4);
+  }
+  60% {
+    opacity: 1;
+  }
+}
+
+/* ---------- page transitions (View Transitions API, via react-router viewTransition) ---------- */
+::view-transition-old(root) {
+  animation: vt-out 220ms ease-in both;
+}
+::view-transition-new(root) {
+  animation: vt-in 420ms var(--ease-out-expo) both;
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+/* the nav stays put while the page underneath changes */
+.site-nav {
+  view-transition-name: site-nav;
+}
+::view-transition-group(site-nav) {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

@@ -13,6 +13,7 @@ import {
   resolveFollowUpDate,
   searchPatients,
 } from '../api.js'
+import { CheckIcon, TimerIcon } from '../components/Icons.jsx'
 import Toast from '../components/Toast.jsx'
 
 function getSpeechRecognitionClass() {
@@ -99,6 +100,7 @@ export default function Doctor() {
   const [lastSaved, setLastSaved] = useState(null)
   const [toastMsg, setToastMsg] = useState(null)
   const undoTimerRef = useRef(null)
+  const [stampSeconds, setStampSeconds] = useState(null) // non-null while the APPROVED stamp shows
 
   const [elapsedMs, setElapsedMs] = useState(0)
   const startedAtRef = useRef(null)
@@ -373,7 +375,8 @@ export default function Doctor() {
     })
   }, [selectedPatient, selectedDate, selectedVisitType])
 
-  const canApprove = status === 'ready' && !!selectedPatient && !!selectedDate && !!selectedVisitType && !approving
+  const canApprove =
+    status === 'ready' && !!selectedPatient && !!selectedDate && !!selectedVisitType && !approving && stampSeconds == null
 
   async function handleApprove() {
     if (!canApprove) return
@@ -388,8 +391,15 @@ export default function Doctor() {
         doctor_seconds: doctorSeconds,
       })
       const snap = { noteText, result, candidates, selectedPatientId, selectedDate, selectedVisitType }
-      resetAll() // clear straight away so the next patient can start
-      showToastFor({ id: saved?.id, name: selectedPatient.name, snap }, 5000)
+      const name = selectedPatient.name
+      stopTimer()
+      setStampSeconds(doctorSeconds) // red APPROVED stamp thuds onto the card
+      navigator.vibrate?.(35)
+      setTimeout(() => {
+        setStampSeconds(null)
+        resetAll() // then clear for the next patient
+        showToastFor({ id: saved?.id, name, snap }, 5000)
+      }, 850)
     } catch (err) {
       setApproveError(err.message || 'Could not save — try again.')
     } finally {
@@ -440,7 +450,8 @@ export default function Doctor() {
     <div className="min-h-screen pb-36">
       <Toast
         show={!!lastSaved || !!toastMsg}
-        message={toastMsg || `Saved ✓ ${lastSaved?.name || ''}`}
+        message={toastMsg || `Saved · ${lastSaved?.name || ''}`}
+        success={!toastMsg || toastMsg.startsWith('Undone')}
         action={lastSaved ? { label: 'Undo', onClick: handleUndo } : null}
       />
 
@@ -450,12 +461,13 @@ export default function Doctor() {
             Next <em className="text-accent">patient</em>
           </h1>
           <div
-            className={`rounded-full px-4 py-1.5 font-mono text-sm tabular-nums transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 font-mono text-sm tabular-nums transition-colors ${
               elapsedMs > 0 ? (elapsedMs > 15000 ? 'bg-accent text-white' : 'bg-lime text-ink') : 'bg-surface text-ink-soft'
             }`}
             aria-label="Stopwatch"
           >
-            ⏱ {formatElapsed(elapsedMs)}
+            <TimerIcon className="h-4 w-4" />
+            {formatElapsed(elapsedMs)}
           </div>
           <div className="relative flex h-48 w-48 items-center justify-center">
           <svg className="pointer-events-none absolute inset-0 -rotate-90" viewBox="0 0 192 192" aria-hidden>
@@ -589,7 +601,14 @@ export default function Doctor() {
           )}
 
           {status === 'ready' && result && (
-            <div className="rise space-y-5 rounded-3xl border border-line bg-surface p-6 shadow-[0_30px_60px_-40px_oklch(0.22_0.035_265/0.4)]">
+            <div className="rise relative space-y-5 rounded-3xl border border-line bg-surface p-6 shadow-[0_30px_60px_-40px_oklch(0.22_0.035_265/0.4)]">
+              {stampSeconds != null && (
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-surface/40">
+                  <div className="stamp" role="status">
+                    Approved · {stampSeconds}s
+                  </div>
+                </div>
+              )}
               {result.warnings?.length > 0 && (
                 <div className="space-y-1 rounded-lg bg-accent-soft p-3 text-sm text-accent-dark">
                   {result.warnings.map((w, i) => (
@@ -716,9 +735,17 @@ export default function Doctor() {
               type="button"
               onClick={handleApprove}
               disabled={!canApprove}
-              className="w-full rounded-full bg-accent py-5 text-lg font-semibold text-white shadow-[0_20px_40px_-15px_oklch(0.57_0.2_30/0.8)] transition-all enabled:hover:-translate-y-0.5 enabled:active:scale-[0.98] disabled:opacity-30 disabled:shadow-none"
+              className={`w-full rounded-full bg-accent py-5 text-lg font-semibold text-white ${stampSeconds != null ? '!opacity-100' : ''} shadow-[0_20px_40px_-15px_oklch(0.57_0.2_30/0.8)] transition-all enabled:hover:-translate-y-0.5 enabled:active:scale-[0.98] disabled:opacity-30 disabled:shadow-none`}
             >
-              {approving ? 'Saving…' : 'Approve'}
+              {approving ? (
+                'Saving…'
+              ) : stampSeconds != null ? (
+                <span className="inline-flex items-center gap-2">
+                  <CheckIcon className="h-5 w-5" /> Saved
+                </span>
+              ) : (
+                'Approve'
+              )}
             </button>
           </div>
         </div>

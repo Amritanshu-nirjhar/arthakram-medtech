@@ -1,0 +1,16 @@
+{
+  "name": "FollowUp — 15-second clinic follow-ups",
+  "short_name": "FollowUp",
+  "description": "Doctor says one line, the patient gets a WhatsApp reminder.",
+  "start_url": "/doctor",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f1e6",
+  "theme_color": "#1b2140",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

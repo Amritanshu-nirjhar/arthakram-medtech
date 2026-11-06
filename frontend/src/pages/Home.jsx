@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { buildMessagePreview, resolveFollowUpDate, prettyDate } from '../api.js'
+import { ArrowRightIcon, CheckIcon, ChevronDownIcon, ShieldIcon } from '../components/Icons.jsx'
 
 const SAMPLE_NOTES = [
   'Ramesh Kumar, review after 2 weeks',
@@ -347,6 +348,173 @@ function HeroDemo() {
   )
 }
 
+const PRICING_ITEMS = [
+  'Unlimited reminders',
+  'Voice notes in English and Hinglish',
+  '3-layer safety, no medical advice ever',
+  'Reception queue and dashboard',
+  '10-minute setup',
+  '1-week free trial',
+]
+
+const FAQS = [
+  {
+    q: 'Is it safe? Can it give medical advice?',
+    a: 'No. Three layers make sure of it. The AI only extracts three fields (name, date, visit type) and never writes a sentence. Every message comes from one fixed, pre-approved template. And a final scan blocks doses, medicine names and diagnosis words before anything is saved.',
+  },
+  {
+    q: 'Does it work in Hinglish?',
+    a: '“Kavita ko 15 din baad bulao” works just like “review Kavita after 15 days”. Doctors speak the way they already do.',
+  },
+  {
+    q: 'Do patients need an app?',
+    a: 'No. They get a plain WhatsApp message from the clinic and can reply YES to confirm or call to reschedule.',
+  },
+  {
+    q: 'What does the doctor actually have to do?',
+    a: 'Tap the mic, say one line, tap Approve. Under 15 seconds, no forms, no typing. Reception handles the sending.',
+  },
+  {
+    q: 'What happens to patient data?',
+    a: 'It stays on the clinic’s own server. This demo uses fictional patients only.',
+  },
+]
+
+function Pricing() {
+  return (
+    <section id="pricing" className="mx-auto max-w-6xl px-4 py-24 sm:px-8 md:py-32">
+      <div className="grid items-center gap-12 md:grid-cols-12">
+        <div className="md:col-span-5">
+          <p data-reveal className="text-xs uppercase tracking-[0.25em] text-ink-soft">
+            Pricing
+          </p>
+          <h2 data-reveal className="display mt-4 text-[clamp(2.8rem,6vw,5rem)] text-ink">
+            One price. <em>That&rsquo;s it.</em>
+          </h2>
+          <p data-reveal style={{ '--i': 1 }} className="mt-6 max-w-sm text-lg leading-relaxed text-ink-soft">
+            Paid by the clinic, not the patient. One recovered visit is ₹500, so the month is covered after{' '}
+            <span className="highlight font-semibold text-ink">two</span>.
+          </p>
+        </div>
+
+        <div data-reveal style={{ '--i': 2 }} className="md:col-span-7">
+          <div className="relative overflow-hidden rounded-[2rem] bg-ink p-8 text-white shadow-[0_40px_80px_-40px_oklch(0.22_0.035_265/0.7)] sm:p-10">
+            <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/25 blur-3xl" />
+            <span
+              className="absolute right-6 top-8 rotate-[8deg] rounded-md border-2 border-lime px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lime sm:right-10"
+              aria-hidden
+            >
+              1 week free
+            </span>
+            <p className="relative text-xs uppercase tracking-[0.2em] text-white/50">Per clinic</p>
+            <p className="relative mt-3 flex items-baseline gap-2">
+              <span className="display text-[clamp(4rem,10vw,6.5rem)] text-lime">₹999</span>
+              <span className="text-lg text-white/60">/ month</span>
+            </p>
+            <p className="hand relative mt-2 text-3xl text-white/90">pays for itself after 2 recovered visits</p>
+            <ul className="relative mt-8 grid gap-3 sm:grid-cols-2">
+              {PRICING_ITEMS.map((item) => (
+                <li key={item} className="flex items-start gap-3 text-white/85">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lime text-ink">
+                    <CheckIcon className="h-3 w-3" strokeWidth="3" />
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Link viewTransition
+              to="/doctor"
+              className="group relative mt-10 inline-flex items-center gap-3 rounded-full bg-lime px-7 py-4 font-medium text-ink transition-transform hover:-translate-y-0.5"
+            >
+              Start with the doctor screen
+              <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Faq() {
+  return (
+    <section id="faq" className="mx-auto max-w-6xl px-4 pb-24 sm:px-8 md:pb-32">
+      <div className="grid gap-10 md:grid-cols-12">
+        <div className="md:col-span-4">
+          <p data-reveal className="text-xs uppercase tracking-[0.25em] text-ink-soft">
+            Questions
+          </p>
+          <h2 data-reveal className="display mt-4 text-[clamp(2.6rem,5vw,4.2rem)] text-ink">
+            Asked <em>often.</em>
+          </h2>
+          <p data-reveal className="mt-6 flex items-center gap-2 text-ink-soft">
+            <ShieldIcon className="h-5 w-5 text-accent" />
+            No medical advice, ever.
+          </p>
+        </div>
+        <div className="divide-y divide-line border-y border-line md:col-span-8">
+          {FAQS.map((f, i) => (
+            <details key={f.q} data-reveal style={{ '--i': i }} className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-left font-display text-xl font-bold tracking-[-0.02em] text-ink sm:text-2xl [&::-webkit-details-marker]:hidden">
+                {f.q}
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line transition-colors group-open:border-ink group-open:bg-ink group-open:text-white">
+                  <ChevronDownIcon className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
+                </span>
+              </summary>
+              <p className="max-w-2xl pb-6 pr-14 text-lg leading-relaxed text-ink-soft">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Footer() {
+  const links = [
+    ['/doctor', 'Doctor'],
+    ['/reception', 'Reception'],
+    ['/dashboard', 'Dashboard'],
+  ]
+  return (
+    <footer className="relative mt-8 overflow-hidden border-t border-line bg-surface/60">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 pt-16 sm:px-8 md:grid-cols-12">
+        <div className="md:col-span-6">
+          <p className="hand text-4xl leading-tight text-ink">
+            One line from the doctor.
+            <br />
+            <span className="text-accent">One reminder for the patient.</span>
+          </p>
+        </div>
+        <nav className="md:col-span-3" aria-label="Footer">
+          <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">Screens</p>
+          <ul className="mt-4 space-y-2">
+            {links.map(([to, label]) => (
+              <li key={to}>
+                <Link viewTransition to={to} className="group inline-flex items-center gap-2 text-lg font-medium text-ink hover:text-accent">
+                  {label}
+                  <ArrowRightIcon className="h-4 w-4 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="md:col-span-3">
+          <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">Promise</p>
+          <p className="mt-4 text-ink-soft">All patient data is fictional. No medical advice is ever sent.</p>
+        </div>
+      </div>
+      <p
+        className="display pointer-events-none mt-10 select-none whitespace-nowrap px-2 text-center text-[clamp(4rem,18vw,16rem)] leading-[0.78] text-ink"
+        style={{ marginBottom: '-0.12em' }}
+        aria-hidden
+      >
+        Follow<span className="text-accent">Up</span>
+      </p>
+    </footer>
+  )
+}
+
 export default function Home() {
   useRevealAll()
   const heroRef = useRef(null)
@@ -408,7 +576,7 @@ export default function Home() {
             <span className="text-ink">No forms, no missed follow-ups.</span>
           </p>
           <div className="rise mt-9 flex flex-wrap gap-3" style={{ '--i': 8 }}>
-            <Link
+            <Link viewTransition
               to="/doctor"
               className="group inline-flex items-center gap-3 rounded-full bg-ink px-7 py-4 text-base font-medium text-white shadow-[0_18px_40px_-18px_oklch(0.22_0.035_265/0.8)] transition-transform duration-200 hover:-translate-y-0.5"
             >
@@ -548,10 +716,10 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <p data-reveal className="mt-8 text-lg text-ink-soft">
-          ₹999 a month. Pays for itself after <span className="font-semibold text-ink">two</span> recovered visits.
-        </p>
       </section>
+
+      <Pricing />
+      <Faq />
 
       {/* CTA */}
       <section className="relative overflow-hidden px-4 pb-24 sm:px-8">
@@ -562,19 +730,19 @@ export default function Home() {
           <div className="drift pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full border-[40px] border-accent/40" />
           <h2 className="display relative max-w-3xl text-[clamp(3rem,8vw,7rem)]">Next patient?</h2>
           <div className="relative mt-10 flex flex-wrap gap-3">
-            <Link
+            <Link viewTransition
               to="/doctor"
               className="rounded-full bg-lime px-7 py-4 font-medium text-ink transition-transform hover:-translate-y-0.5"
             >
               Doctor screen
             </Link>
-            <Link
+            <Link viewTransition
               to="/reception"
               className="rounded-full border border-white/30 px-7 py-4 font-medium transition-colors hover:border-white"
             >
               Reception queue
             </Link>
-            <Link
+            <Link viewTransition
               to="/dashboard"
               className="rounded-full border border-white/30 px-7 py-4 font-medium transition-colors hover:border-white"
             >
@@ -582,10 +750,9 @@ export default function Home() {
             </Link>
           </div>
         </div>
-        <p className="mx-auto mt-10 max-w-6xl text-sm text-ink-soft">
-          FollowUp · Hackathon build · All patient data is fictional. No medical advice is ever sent.
-        </p>
       </section>
+
+      <Footer />
     </div>
   )
 }

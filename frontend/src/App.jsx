@@ -15,7 +15,8 @@ function App() {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <main key={pathname} className="page-fade">
+      {/* browsers with View Transitions animate route changes natively; others get a plain fade */}
+      <main key={pathname} className={document.startViewTransition ? '' : 'page-fade'}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/doctor" element={<Doctor />} />
