@@ -114,6 +114,7 @@ export default function Reception() {
   }
 
   async function handleSend(reminder) {
+    if (!reminder.patient_phone) return; // no number on file: nothing to open
     const url = `https://wa.me/91${reminder.patient_phone}?text=${encodeURIComponent(reminder.message)}`;
     window.open(url, "_blank", "noopener,noreferrer");
     if (await handleStatusChange(reminder, "sent")) {
@@ -370,7 +371,8 @@ export default function Reception() {
                               <button
                                 type="button"
                                 onClick={() => handleSend(r)}
-                                disabled={action.loading}
+                                disabled={action.loading || !r.patient_phone}
+                                title={!r.patient_phone ? "No phone number on file" : undefined}
                                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[oklch(0.5_0.13_150)] min-h-11 px-5 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
                               >
                                 <WhatsAppIcon className="h-4 w-4" />
@@ -378,6 +380,11 @@ export default function Reception() {
                                   ? "Opening…"
                                   : "Send on WhatsApp"}
                               </button>
+                            )}
+                            {r.status === "approved" && !r.patient_phone && (
+                              <p className="text-xs text-warn sm:text-right">
+                                Add a phone number to send this.
+                              </p>
                             )}
                             {r.status === "sent" && (
                               <>

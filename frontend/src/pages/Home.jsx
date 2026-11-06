@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { buildMessagePreview, resolveFollowUpDate, prettyDate } from '../api.js'
+import { parseNote, prettyDate, resolveFollowUpDate } from '../api.js'
 import { ArrowRightIcon, CheckIcon, ChevronDownIcon, ShieldIcon } from '../components/Icons.jsx'
 
 const SAMPLE_NOTES = [
@@ -14,7 +14,25 @@ const SAMPLE_NOTES = [
 ]
 
 const DEMO_DATE = resolveFollowUpDate(10)
-const DEMO_MESSAGE = buildMessagePreview({ firstName: 'Anil', dateISO: DEMO_DATE, visitType: 'follow_up' })
+const DEMO_NOTE = 'Anil Verma, BP high, started amlodipine 5mg, review in 10 days'
+
+// The landing page shows the REAL message the server renders for the demo note,
+// not a browser-side copy of the template (templates live only in the backend).
+let demoMessagePromise = null
+function useDemoMessage() {
+  const [message, setMessage] = useState(null)
+  useEffect(() => {
+    demoMessagePromise ??= parseNote(DEMO_NOTE)
+      .then((r) => r.message_preview)
+      .catch(() => null)
+    let alive = true
+    demoMessagePromise.then((m) => alive && setMessage(m))
+    return () => {
+      alive = false
+    }
+  }, [])
+  return message || '…'
+}
 
 const STEPS = [
   { n: '01', title: 'Speak', body: 'Tap the mic and say one line, the way you would to your assistant. English or Hinglish.' },
@@ -146,6 +164,7 @@ function Wave({ className = '' }) {
 
 // The phone mock shows a different screen for each story step.
 function Phone({ step, className = '' }) {
+  const DEMO_MESSAGE = useDemoMessage()
   return (
     <div className={`mx-auto w-full max-w-[300px] ${className}`}>
       <div className="rounded-[2.6rem] bg-ink p-2.5 elev-2">
@@ -312,6 +331,7 @@ function heroParallaxReset(e) {
 
 // Looping product story: handwritten note -> medical words struck -> 3 fields -> WhatsApp message.
 function HeroDemo() {
+  const DEMO_MESSAGE = useDemoMessage()
   let strikeIdx = 0
   return (
     <div className="hd-scene rise relative mx-auto h-[540px] w-full max-w-[540px] sm:h-[580px]" style={{ '--i': 4 }} aria-hidden>
@@ -575,6 +595,7 @@ function Footer() {
 }
 
 export default function Home() {
+  const DEMO_MESSAGE = useDemoMessage()
   useRevealAll()
   const heroRef = useRef(null)
   const counterRef = useRef(null)

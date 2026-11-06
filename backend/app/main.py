@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlmodel import Session, select
 
 from .dates import adjust_for_sunday, compute_final_date, pretty_date
@@ -228,6 +228,95 @@ def parse_note(note: NoteIn, session: Session = Depends(get_session)):
         warnings=warnings,
         no_follow_up=result.no_follow_up,
     )
+
+
+# --------------------------------------------------------------------------
+# POST /messages/preview
+# --------------------------------------------------------------------------
+#
+# Read-only re-render of the patient message from the fixed template. The
+# doctor UI calls this whenever `/notes/parse` could not produce a
+# `message_preview` itself (ambiguous name -> doctor taps a candidate chip,
+# or missing date -> doctor taps a duration chip). It must NEVER build the
+# message text itself; it goes through this endpoint, which calls the exact
+# same `render_message()` used by `POST /reminders`, so the preview the
+# doctor approves can never drift from what gets saved.
+
+
+class MessagePreviewIn(BaseModel):
+    patient_id: int
+    follow_up_date: str
+    visit_type: str
+
+    @field_validator("visit_type")
+    @classmethod
+    def _visit_type_must_be_valid(cls, v: str) -> str:
+        if not visit_type_is_valid(v):
+            raise ValueError(
+                f"visit_type must be one of {sorted(t.value for t in VisitType)}"
+            )
+        return v
+
+    @field_validator("follow_up_date")
+    @classmethod
+    def _follow_up_date_must_parse(cls, v: str) -> str:
+        try:
+            date.fromisoformat(v)
+        except ValueError:
+            raise ValueError("follow_up_date must be in YYYY-MM-DD format (got %r)" % v)
+        return v
+
+
+class MessagePreviewOut(BaseModel):
+    message: Optional[str] = None
+    warnings: List[str]
+
+
+@app.post("/messages/preview", response_model=MessagePreviewOut)
+def preview_message(payload: MessagePreviewIn, session: Session = Depends(get_session)):
+    patient = session.get(Patient, payload.patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="patient not found")
+
+    # Mirrors POST /reminders exactly: parse -> Sunday-adjust -> render
+    # through the one shared template renderer. No second renderer here.
+    parsed_date = date.fromisoformat(payload.follow_up_date)
+    final_date = adjust_for_sunday(parsed_date)
+
+    message = render_message(
+        first_name=patient.name.split()[0],
+        date_pretty=pretty_date(final_date),
+        visit_type=payload.visit_type,
+    )
+
+    warnings: List[str] = []
+    seen_hits: set = set()
+    safe = True
+
+    # Warnings never echo the actual blocked term back to the caller - this
+    # response can reach the doctor UI, and hard rule 1 ("no medicine,
+    # dosage or diagnosis word in ANY output") applies to the whole response
+    # body, not just the `message` field.
+    msg_safe, msg_hits = is_message_safe(message)
+    if not msg_safe:
+        safe = False
+        warnings.append(f"message blocked: {len(msg_hits)} restricted term(s) found")
+        seen_hits.update(h.lower() for h in msg_hits)
+
+    fields_safe, field_hits = is_extraction_safe(patient.name, payload.visit_type)
+    if not fields_safe:
+        safe = False
+        new_hits = [h for h in field_hits if h.lower() not in seen_hits]
+        if new_hits:
+            warnings.append(f"blocked terms in fields: {len(new_hits)} restricted term(s) found")
+
+    # Read-only: no Reminder row is ever created or updated here. Mirrors
+    # /notes/parse, which never lets an unsafe candidate produce a
+    # message_preview: any safety-check failure here - message OR fields -
+    # suppresses the message text (None) instead of shipping it. This is a
+    # cosmetic preview endpoint, so we fail soft (no 400) rather than block
+    # the doctor's Approve flow; the frontend already handles a null preview.
+    return MessagePreviewOut(message=message if safe else None, warnings=warnings)
 
 
 # --------------------------------------------------------------------------

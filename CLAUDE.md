@@ -22,7 +22,7 @@ A clinic tool: doctor speaks one line ("Ramesh Kumar, review after 2 weeks") →
 ## Commands (keep these up to date as the project is scaffolded)
 - Everything at once: `./dev.sh` (add `--phone` for the HTTPS phone server)
 - Backend dev: `cd backend && uvicorn app.main:app --reload --port 8000`
-- Backend tests: `cd backend && pytest -q`
+- Backend tests: `cd backend && .venv/bin/pytest -q` (bare `pytest` may resolve to a system/Anaconda Python and fail with `ModuleNotFoundError: rapidfuzz`)
 - Reset + seed DB: `cd backend && python -m app.seed`
 - Frontend dev: `cd frontend && npm run dev` (port 5173; API proxied at `/api` → :8000)
 - Demo on a phone (mic needs HTTPS): `cd frontend && npm run dev:phone`, open the `https://<laptop-ip>:5174` URL it prints, accept the cert warning

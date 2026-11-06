@@ -7,7 +7,7 @@ const USE_MOCK = false
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api' // proxied to :8000 by vite.config.js
 
 // ---------------------------------------------------------------------------
-// Shared constants (also used by the mock — these mirror backend/app/templates.py)
+// Shared constants
 // ---------------------------------------------------------------------------
 
 export const VISIT_LABELS = {
@@ -22,15 +22,11 @@ export const DATE_CHIP_OPTIONS = [
   { label: '1 month', days: 30 },
 ]
 
-const CLINIC_NAME = 'Sharma Family Clinic'
-const DOCTOR_NAME = 'Dr. Sharma'
-const CLINIC_PHONE = '9800000000'
-
 // ---------------------------------------------------------------------------
-// Pure helpers — safe to use for instant client-side preview. The real
-// message that gets saved is always rendered server-side from the same
-// fixed template (backend/app/templates.py); this mirrors it so the doctor
-// sees the message update the instant they tap a chip, with no round trip.
+// Pure helpers — formatting only. The patient-facing message text is never
+// built here: it always comes from the server, either as `message_preview`
+// from /notes/parse or as `message` from /messages/preview, both of which
+// render the one fixed template in backend/app/templates.py.
 // ---------------------------------------------------------------------------
 
 export function firstNameOf(fullName) {
@@ -59,15 +55,24 @@ export function prettyDate(iso) {
   return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
-export function buildMessagePreview({ firstName, dateISO, visitType }) {
-  if (!firstName || !dateISO || !visitType) return null
-  const label = VISIT_LABELS[visitType] || VISIT_LABELS.follow_up
-  return `Hi ${firstName}, this is a reminder from ${CLINIC_NAME}. ${DOCTOR_NAME} would like to see you on ${prettyDate(dateISO)} for your ${label}. Reply YES to confirm, or call ${CLINIC_PHONE} to reschedule.`
-}
-
 // ---------------------------------------------------------------------------
 // Mock data + logic (used while USE_MOCK is true)
 // ---------------------------------------------------------------------------
+
+// Mock-only: stands in for the server's fixed template render
+// (backend/app/templates.py) so the mock's parse previews, seed reminders
+// and /messages/preview response look realistic while USE_MOCK is true.
+// This is never reachable when USE_MOCK is false — the live app always
+// renders the message the server sends back, never a client-built one.
+const MOCK_CLINIC_NAME = 'Sharma Family Clinic'
+const MOCK_DOCTOR_NAME = 'Dr. Sharma'
+const MOCK_CLINIC_PHONE = '9800000000'
+
+function mockRenderMessage({ firstName, dateISO, visitType }) {
+  if (!firstName || !dateISO || !visitType) return null
+  const label = VISIT_LABELS[visitType] || VISIT_LABELS.follow_up
+  return `Hi ${firstName}, this is a reminder from ${MOCK_CLINIC_NAME}. ${MOCK_DOCTOR_NAME} would like to see you on ${prettyDate(dateISO)} for your ${label}. Reply YES to confirm, or call ${MOCK_CLINIC_PHONE} to reschedule.`
+}
 
 const MOCK_PATIENTS = [
   { id: 'p1', name: 'Ramesh Kumar', phone: '9811100001', age: 52, last_visit_date: '2026-10-15' },
@@ -214,7 +219,7 @@ async function mockParseNote(rawText) {
 
   let message_preview = null
   if (candidates.length === 1 && follow_up_date) {
-    message_preview = buildMessagePreview({
+    message_preview = mockRenderMessage({
       firstName: firstNameOf(candidates[0].name),
       dateISO: follow_up_date,
       visitType: visit_type,
@@ -247,7 +252,7 @@ function mkSeedReminder(patientId, followUpDate, visitType, status, doctorSecond
     patient_phone: patient.phone,
     follow_up_date: followUpDate,
     visit_type: visitType,
-    message: buildMessagePreview({ firstName: firstNameOf(patient.name), dateISO: followUpDate, visitType }),
+    message: mockRenderMessage({ firstName: firstNameOf(patient.name), dateISO: followUpDate, visitType }),
     status,
     created_at: '2026-11-01T09:00:00.000Z',
     approved_at: '2026-11-01T09:00:05.000Z',
@@ -260,7 +265,7 @@ async function mockCreateReminder({ patient_id, follow_up_date, visit_type, doct
   await wait(350)
   const patient = findPatientById(patient_id)
   if (!patient) throw new Error('That patient could not be found. Please pick again.')
-  const message = buildMessagePreview({ firstName: firstNameOf(patient.name), dateISO: follow_up_date, visitType: visit_type })
+  const message = mockRenderMessage({ firstName: firstNameOf(patient.name), dateISO: follow_up_date, visitType: visit_type })
   const reminder = {
     id: `r-${reminderSeq++}`,
     patient_id: patient.id,
@@ -294,6 +299,18 @@ async function mockUpdateReminderStatus(id, status) {
   reminder.status = status
   if (status === 'sent' && !reminder.sent_at) reminder.sent_at = new Date().toISOString()
   return { ...reminder }
+}
+
+async function mockPreviewMessage({ patient_id, follow_up_date, visit_type }) {
+  await wait(200)
+  const patient = findPatientById(patient_id)
+  if (!patient) throw new Error('That patient could not be found.')
+  const message = mockRenderMessage({
+    firstName: firstNameOf(patient.name),
+    dateISO: follow_up_date,
+    visitType: visit_type,
+  })
+  return { message, warnings: [] }
 }
 
 async function mockSearchPatients(query) {
@@ -359,6 +376,18 @@ async function request(path, options = {}) {
 export async function parseNote(text) {
   if (USE_MOCK) return mockParseNote(text)
   return request('/notes/parse', { method: 'POST', body: JSON.stringify({ text }) })
+}
+
+// Used once the doctor resolves an ambiguous patient or a missing date (or
+// picks a patient from search) so the preview reflects the server's real
+// template instead of going stale. Always render the `message` this returns
+// verbatim — never build message text on the client.
+export async function previewMessage({ patient_id, follow_up_date, visit_type }) {
+  if (USE_MOCK) return mockPreviewMessage({ patient_id, follow_up_date, visit_type })
+  return request('/messages/preview', {
+    method: 'POST',
+    body: JSON.stringify({ patient_id, follow_up_date, visit_type }),
+  })
 }
 
 export async function approveReminder({ patient_id, follow_up_date, visit_type, doctor_seconds }) {

@@ -4,11 +4,13 @@
 CLAUDE_CODE_PROMPT.md
 __pycache__/
 *.pyc
+.pytest_cache/
 .venv/
 venv/
 *.db
 node_modules/
 dist/
+.playwright-mcp/
 .DS_Store
 
 .playwright-mcp/

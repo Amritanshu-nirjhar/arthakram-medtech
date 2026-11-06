@@ -159,6 +159,12 @@ export default function Dashboard() {
           </div>
         )}
 
+        {!loading && !error && stats && !stats.total_reminders && (
+          <p className="mt-4 text-sm text-ink-soft">
+            No reminders yet. Approve one from the Doctor screen and it will show up here.
+          </p>
+        )}
+
         {!loading && !error && stats?.total_reminders > 0 && (
           <div className="rise scroll-rise mt-4 rounded-3xl border border-line bg-surface p-5 sm:p-6" style={{ '--i': 5 }}>
             <p className="label text-ink-soft">Where every reminder is now</p>
