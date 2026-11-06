@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getStats } from '../api.js'
+import { CountUp } from './Home.jsx'
 
 const STAT_TILES = [
-  { key: 'total_reminders', label: 'Created', format: fmtCount },
-  { key: 'sent', label: 'Sent', format: fmtCount },
-  { key: 'confirmed', label: 'Confirmed', format: fmtCount },
-  { key: 'visited', label: 'Visited', format: fmtCount },
-  { key: 'avg_doctor_seconds', label: 'Avg doctor time', format: fmtSeconds },
+  { key: 'total_reminders', label: 'Created' },
+  { key: 'sent', label: 'Sent' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'visited', label: 'Visited' },
+  { key: 'avg_doctor_seconds', label: 'Avg doctor time' },
 ]
 
 const DEFAULT_INPUTS = {
@@ -26,14 +27,6 @@ const FIELDS = [
   { key: 'consultFee', label: 'Consult fee (₹)', min: 0, step: 50 },
   { key: 'targetMissRate', label: 'Target miss rate (%)', min: 0, max: 100, step: 1 },
 ]
-
-function fmtCount(n) {
-  return n == null ? '—' : Number(n).toLocaleString('en-IN')
-}
-
-function fmtSeconds(n) {
-  return n == null ? '—' : `${Math.round(n)}s`
-}
 
 function fmtNum(n) {
   return Math.round(n).toLocaleString('en-IN')
@@ -109,13 +102,16 @@ export default function Dashboard() {
   const v = useMemo(() => computeValue(inputs), [inputs])
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6">
-      <h1 className="text-xl font-semibold text-ink">Dashboard</h1>
-      <p className="mt-1 text-sm text-ink-soft">
+    <div className="mx-auto max-w-5xl px-4 pb-20 pt-10 sm:px-6">
+      <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">Dashboard</p>
+      <h1 className="display mt-2 text-6xl text-ink sm:text-7xl">
+        How it&rsquo;s <em className="text-accent">going</em>
+      </h1>
+      <p className="mt-3 text-base text-ink-soft">
         How follow-ups are going, and what closing the miss rate is worth.
       </p>
 
-      <div className="mt-5">
+      <div className="mt-8">
         {loading && (
           <div className="rounded-xl border border-line bg-surface p-6 text-center text-sm text-ink-soft">
             Loading stats…
@@ -133,18 +129,25 @@ export default function Dashboard() {
 
         {!loading && !error && stats && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {STAT_TILES.map((tile) => (
-              <div key={tile.key} className="rounded-xl border border-line bg-surface p-4">
-                <p className="text-2xl font-semibold tabular-nums text-ink">{tile.format(stats[tile.key])}</p>
-                <p className="mt-1 text-xs text-ink-soft">{tile.label}</p>
+            {STAT_TILES.map((tile, i) => (
+              <div
+                key={tile.key}
+                style={{ '--i': i }}
+                className={`rise rounded-3xl border p-5 ${i === 4 ? 'border-transparent bg-lime' : 'border-line bg-surface'}`}
+              >
+                <p className="display text-5xl text-ink">
+                  {stats[tile.key] == null ? '—' : <CountUp to={stats[tile.key]} />}
+                  {tile.key === 'avg_doctor_seconds' && stats[tile.key] != null && <span className="text-3xl">s</span>}
+                </p>
+                <p className="mt-2 text-[11px] uppercase tracking-[0.15em] text-ink-soft">{tile.label}</p>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div className="mt-8 rounded-xl border border-line bg-surface p-5">
-        <h2 className="text-base font-semibold text-ink">Value calculator</h2>
+      <div className="mt-10 rounded-3xl border border-line bg-surface p-6 sm:p-8">
+        <h2 className="display text-4xl text-ink">Value calculator</h2>
         <p className="mt-1 text-sm text-ink-soft">
           Edit the numbers for this clinic — the math below updates as you type.
         </p>
@@ -160,7 +163,7 @@ export default function Dashboard() {
                 step={f.step}
                 value={inputs[f.key]}
                 onChange={(e) => handleInputChange(f.key, e.target.value)}
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
+                className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
               />
             </label>
           ))}
@@ -177,7 +180,7 @@ export default function Dashboard() {
         <div className="mt-5 space-y-4 border-t border-line pt-4">
           <div>
             <p className="text-xs text-ink-soft">Follow-ups / month</p>
-            <p className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{fmtNum(v.followUpsPerMonth)}</p>
+            <p className="mt-0.5 text-3xl font-semibold tracking-tight tabular-nums text-ink">{fmtNum(v.followUpsPerMonth)}</p>
             <p className="mt-1 text-xs text-ink-soft">
               {fmtNum(v.patientsPerDay)} patients/day × {fmtNum(v.workingDays)} working days/month ×{' '}
               {fmtNum(v.pctNeedingFollowUp)}% need a follow-up
@@ -186,7 +189,7 @@ export default function Dashboard() {
 
           <div>
             <p className="text-xs text-ink-soft">Missed follow-ups / month, at today&rsquo;s miss rate</p>
-            <p className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{fmtNum(v.missedPerMonth)}</p>
+            <p className="mt-0.5 text-3xl font-semibold tracking-tight tabular-nums text-ink">{fmtNum(v.missedPerMonth)}</p>
             <p className="mt-1 text-xs text-ink-soft">
               {fmtNum(v.followUpsPerMonth)} follow-ups/month × {fmtNum(v.currentMissRate)}% miss rate
             </p>
@@ -194,20 +197,20 @@ export default function Dashboard() {
 
           <div>
             <p className="text-xs text-ink-soft">₹ lost / month, at today&rsquo;s miss rate</p>
-            <p className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{fmtRupee(v.rupeesLostPerMonth)}</p>
+            <p className="mt-0.5 text-3xl font-semibold tracking-tight tabular-nums text-ink">{fmtRupee(v.rupeesLostPerMonth)}</p>
             <p className="mt-1 text-xs text-ink-soft">
               {fmtNum(v.missedPerMonth)} missed follow-ups × ₹{fmtNum(v.consultFee)} consult fee
             </p>
           </div>
 
-          <div className="rounded-lg bg-accent-soft p-4">
-            <p className="text-xs text-accent-dark">
+          <div className="rounded-3xl bg-ink p-6 text-white">
+            <p className="text-xs uppercase tracking-[0.15em] text-white/60">
               ₹ recovered / month if the miss rate drops to {fmtNum(v.targetMissRate)}%
             </p>
-            <p className="mt-0.5 text-2xl font-semibold tabular-nums text-accent-dark">
+            <p className="display mt-2 text-6xl tabular-nums text-lime sm:text-7xl">
               {fmtRupee(v.rupeesRecoveredPerMonth)}
             </p>
-            <p className="mt-1 text-xs text-accent-dark">
+            <p className="mt-2 text-xs text-white/60">
               ({fmtNum(v.currentMissRate)}% − {fmtNum(v.targetMissRate)}%) × {fmtNum(v.followUpsPerMonth)}{' '}
               follow-ups/month × ₹{fmtNum(v.consultFee)} = {fmtNum(v.visitsRecoveredPerMonth)} visits recovered/month
             </p>

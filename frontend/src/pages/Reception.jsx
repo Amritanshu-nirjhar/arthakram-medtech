@@ -84,18 +84,21 @@ export default function Reception() {
   }, [reminders, filter, today, weekEnd])
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6">
-      <h1 className="text-xl font-semibold text-ink">Reception queue</h1>
-      <p className="mt-1 text-sm text-ink-soft">Send reminders and track who has confirmed, visited or missed.</p>
+    <div className="mx-auto max-w-4xl px-4 pb-20 pt-10 sm:px-6">
+      <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">Reception</p>
+      <h1 className="display mt-2 text-6xl text-ink sm:text-7xl">
+        The <em className="text-accent">queue</em>
+      </h1>
+      <p className="mt-3 text-base text-ink-soft">Send reminders and track who has confirmed, visited or missed.</p>
 
-      <div className="mt-5 inline-flex rounded-lg border border-line bg-surface p-1">
+      <div className="mt-8 inline-flex rounded-full border border-line bg-surface p-1">
         {FILTERS.map((f) => (
           <button
             key={f.value}
             type="button"
             onClick={() => setFilter(f.value)}
-            className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              filter === f.value ? 'bg-accent text-white' : 'text-ink-soft hover:text-ink'
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              filter === f.value ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink'
             }`}
           >
             {f.label}
@@ -103,7 +106,7 @@ export default function Reception() {
         ))}
       </div>
 
-      <div className="mt-5 rounded-xl border border-line bg-surface">
+      <div className="mt-6 rounded-3xl border border-line bg-surface">
         {loading && <p className="p-6 text-center text-sm text-ink-soft">Loading the queue…</p>}
 
         {!loading && error && (
@@ -120,14 +123,18 @@ export default function Reception() {
         )}
 
         {!loading && !error && visible.length > 0 && (
-          <ul className="divide-y divide-line px-5">
-            {visible.map((r) => {
+          <ul key={filter} className="divide-y divide-line px-5 sm:px-7">
+            {visible.map((r, idx) => {
               const action = actionState[r.id] || {}
               return (
-                <li key={r.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
+                <li
+                  key={r.id}
+                  style={{ '--i': idx }}
+                  className="rise flex flex-col gap-3 py-5 sm:flex-row sm:items-start sm:justify-between"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-ink">{r.patient_name}</p>
+                      <p className="text-lg font-semibold tracking-tight text-ink">{r.patient_name}</p>
                       <StatusBadge status={r.status} />
                     </div>
                     <p className="mt-0.5 text-sm text-ink-soft">
@@ -147,7 +154,7 @@ export default function Reception() {
                         type="button"
                         onClick={() => handleSend(r)}
                         disabled={action.loading}
-                        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[oklch(0.62_0.15_150)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
                       >
                         {action.loading ? 'Opening…' : 'Send on WhatsApp'}
                       </button>
@@ -158,7 +165,7 @@ export default function Reception() {
                           type="button"
                           onClick={() => handleStatusChange(r, 'confirmed')}
                           disabled={action.loading}
-                          className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
+                          className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
                         >
                           Mark confirmed
                         </button>
@@ -166,7 +173,7 @@ export default function Reception() {
                           type="button"
                           onClick={() => handleStatusChange(r, 'missed')}
                           disabled={action.loading}
-                          className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-soft hover:border-warn disabled:opacity-50"
+                          className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink-soft hover:border-warn disabled:opacity-50"
                         >
                           Mark missed
                         </button>
@@ -178,7 +185,7 @@ export default function Reception() {
                           type="button"
                           onClick={() => handleStatusChange(r, 'visited')}
                           disabled={action.loading}
-                          className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
+                          className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
                         >
                           Mark visited
                         </button>
@@ -186,7 +193,7 @@ export default function Reception() {
                           type="button"
                           onClick={() => handleStatusChange(r, 'missed')}
                           disabled={action.loading}
-                          className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-soft hover:border-warn disabled:opacity-50"
+                          className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink-soft hover:border-warn disabled:opacity-50"
                         >
                           Mark missed
                         </button>

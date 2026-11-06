@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink } from 'react-router-dom'
 
 const links = [
   { to: '/doctor', label: 'Doctor' },
@@ -7,18 +8,36 @@ const links = [
 ]
 
 export default function NavBar() {
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
-    <header className="border-b border-line bg-surface">
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 sm:px-6">
-        <span className="text-[1.05rem] font-semibold text-ink">FollowUp</span>
-        <nav className="flex gap-1">
+    <header className="sticky top-0 z-40 px-3 pt-3">
+      <div
+        className={`mx-auto flex max-w-6xl items-center justify-between rounded-full px-3 py-2 transition-all duration-300 sm:px-4 ${
+          scrolled ? 'border border-line bg-surface/80 shadow-sm backdrop-blur-md' : 'border border-transparent'
+        }`}
+      >
+        <Link to="/" className="flex items-center gap-2 pl-2 text-ink">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-50" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" />
+          </span>
+          <span className="hidden text-lg font-semibold tracking-tight min-[420px]:inline">FollowUp</span>
+        </Link>
+        <nav className="flex gap-0.5">
           {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-accent-soft text-accent-dark' : 'text-ink-soft hover:bg-bg hover:text-ink'
+                `rounded-full px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${
+                  isActive ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink'
                 }`
               }
             >

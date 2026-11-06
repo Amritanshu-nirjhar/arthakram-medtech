@@ -1,25 +1,34 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter Tight", "Segoe UI", system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
 
-  --color-bg: #f6f7f5;
-  --color-surface: #ffffff;
-  --color-ink: #1b2320;
-  --color-ink-soft: #5b6861;
-  --color-line: #dce2de;
-  --color-accent: #0f6e5c;
-  --color-accent-dark: #0b4a3d;
-  --color-accent-soft: #e3f1ec;
-  --color-warn: #b6531f;
-  --color-warn-soft: #f8e7dd;
+  /* paper, ink, one green pulse */
+  --color-bg: oklch(0.972 0.008 110);
+  --color-surface: oklch(0.995 0.003 110);
+  --color-ink: oklch(0.2 0.02 165);
+  --color-ink-soft: oklch(0.48 0.02 165);
+  --color-line: oklch(0.9 0.01 140);
+  --color-accent: oklch(0.47 0.09 170);
+  --color-accent-dark: oklch(0.34 0.07 170);
+  --color-accent-soft: oklch(0.94 0.035 165);
+  --color-lime: oklch(0.9 0.17 125);
+  --color-warn: oklch(0.55 0.15 45);
+  --color-warn-soft: oklch(0.94 0.04 50);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html,
 body,
 #root {
   min-height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -29,40 +38,242 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(15, 110, 92, 0.35);
+::selection {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* subtle paper grain */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(oklch(0.2 0.02 165 / 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+.display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+
+/* ---------- scroll progress (native scroll timeline, no JS) ---------- */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 60;
+  background: var(--color-accent);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  animation: grow-x linear both;
+  animation-timeline: scroll(root);
+}
+@supports not (animation-timeline: scroll()) {
+  .scroll-progress {
+    display: none;
   }
-  70% {
-    box-shadow: 0 0 0 20px rgba(15, 110, 92, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(15, 110, 92, 0);
+}
+@keyframes grow-x {
+  to {
+    transform: scaleX(1);
   }
 }
 
+/* ---------- reveal on scroll (class toggled by IntersectionObserver) ---------- */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 900ms var(--ease-out-expo),
+    transform 900ms var(--ease-out-expo);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+[data-reveal].in {
+  opacity: 1;
+  transform: none;
+}
+
+/* line-mask reveal for big headings */
+.line {
+  display: block;
+  overflow: hidden;
+  padding: 0 0.08em 0.08em;
+  margin-inline: -0.08em;
+}
+.line > span {
+  display: block;
+  transform: translateY(105%);
+  animation: line-up 1100ms var(--ease-out-expo) forwards;
+  animation-delay: calc(var(--i, 0) * 110ms + 150ms);
+}
+@keyframes line-up {
+  to {
+    transform: none;
+  }
+}
+
+/* entrance for app screens (list items, tiles) */
+.rise {
+  animation: rise 700ms var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+/* opacity only: a transform here would break position:fixed children */
+.page-fade {
+  animation: page-fade 400ms ease-out both;
+}
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* struck-through medical words in the safety section */
+.strike {
+  background-image: linear-gradient(var(--color-warn), var(--color-warn));
+  background-repeat: no-repeat;
+  background-position: 0 55%;
+  background-size: 0% 2px;
+  transition: background-size 700ms var(--ease-out-expo), color 700ms;
+  transition-delay: calc(var(--i, 0) * 180ms + 300ms);
+}
+.in .strike {
+  background-size: 100% 2px;
+  color: var(--color-ink-soft);
+}
+
+/* marquee */
+.marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+.marquee:hover {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* parallax drift linked to scroll (native) */
+.drift {
+  animation: drift linear both;
+  animation-timeline: view();
+}
+@keyframes drift {
+  from {
+    transform: translateY(60px) rotate(-4deg);
+  }
+  to {
+    transform: translateY(-60px) rotate(3deg);
+  }
+}
+
+/* mic + waves */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 oklch(0.47 0.09 170 / 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 28px oklch(0.47 0.09 170 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.47 0.09 170 / 0);
+  }
+}
 .mic-listening {
   animation: pulse-ring 1.6s ease-out infinite;
+}
+
+.wave span {
+  display: inline-block;
+  width: 4px;
+  border-radius: 4px;
+  background: currentColor;
+  animation: wave 1s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -120ms);
+}
+@keyframes wave {
+  0%,
+  100% {
+    height: 6px;
+  }
+  50% {
+    height: 26px;
+  }
 }
 
 @keyframes toast-pop {
   from {
     opacity: 0;
-    transform: translate(-50%, 10px);
+    transform: translate(-50%, 10px) scale(0.96);
   }
   to {
     opacity: 1;
     transform: translate(-50%, 0);
   }
 }
-
 .toast-pop {
-  animation: toast-pop 180ms ease-out;
+  animation: toast-pop 260ms var(--ease-out-expo);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: blink 1s steps(1) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mic-listening,
-  .toast-pop {
-    animation: none;
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  [data-reveal],
+  .line > span {
+    opacity: 1;
+    transform: none;
+  }
+  .in .strike {
+    background-size: 100% 2px;
   }
 }

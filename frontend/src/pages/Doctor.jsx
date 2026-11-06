@@ -261,22 +261,40 @@ export default function Doctor() {
   }
 
   return (
-    <div className="min-h-screen bg-bg pb-32">
+    <div className="min-h-screen pb-36">
       <Toast show={showToast} message="Saved ✓" />
 
       <div className="mx-auto max-w-md px-4 pt-6">
-        <div className="flex flex-col items-center gap-3 pb-6 pt-2 text-center">
-          <div className="tabular-nums text-sm font-medium text-ink-soft">{formatElapsed(elapsedMs)}</div>
+        <div className="flex flex-col items-center gap-4 pb-8 pt-4 text-center">
+          <h1 className="display text-5xl text-ink sm:text-6xl">
+            Next <em className="text-accent">patient</em>
+          </h1>
+          <div
+            className={`rounded-full px-4 py-1.5 font-mono text-sm tabular-nums transition-colors ${
+              elapsedMs > 0 ? (elapsedMs > 15000 ? 'bg-warn-soft text-warn' : 'bg-lime text-ink') : 'bg-surface text-ink-soft'
+            }`}
+            aria-label="Stopwatch"
+          >
+            ⏱ {formatElapsed(elapsedMs)}
+          </div>
           <button
             type="button"
             onClick={handleMicTap}
             disabled={!speechSupported}
             aria-pressed={isListening}
-            className={`flex h-28 w-28 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 ${
+            className={`flex h-36 w-36 items-center justify-center rounded-full text-white shadow-[0_20px_50px_-15px_oklch(0.47_0.09_170/0.7)] transition-all duration-300 hover:scale-105 active:scale-95 ${
               isListening ? 'mic-listening bg-accent-dark' : 'bg-accent'
             } ${!speechSupported ? 'opacity-40' : ''}`}
           >
-            <MicIcon className="h-10 w-10" />
+            {isListening ? (
+              <span className="wave inline-flex h-8 items-center gap-1" aria-hidden>
+                {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                  <span key={i} style={{ '--i': i }} />
+                ))}
+              </span>
+            ) : (
+              <MicIcon className="h-12 w-12" />
+            )}
           </button>
           <p className="text-sm text-ink-soft">
             {!speechSupported
@@ -301,20 +319,20 @@ export default function Doctor() {
               if (e.key === 'Enter') submitNote(noteText)
             }}
             placeholder='e.g. "Ramesh Kumar, review after 2 weeks"'
-            className="flex-1 rounded-lg border border-line bg-surface px-4 py-3 text-base text-ink placeholder:text-ink-soft focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
+            className="min-w-0 flex-1 rounded-full border border-line bg-surface px-5 py-3.5 text-base text-ink placeholder:text-ink-soft focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
           />
           <button
             type="button"
             onClick={() => submitNote(noteText)}
             disabled={!noteText.trim() || status === 'parsing'}
-            className="rounded-lg bg-ink px-4 py-3 text-sm font-medium text-white disabled:opacity-30"
+            className="rounded-full bg-ink px-5 py-3.5 text-sm font-medium text-white transition-opacity disabled:opacity-30"
           >
             Check
           </button>
         </div>
 
         <div className="space-y-4 pt-4">
-          {status === 'parsing' && <p className="text-center text-sm text-ink-soft">Reading the note…</p>}
+          {status === 'parsing' && <p className="animate-pulse text-center text-sm text-ink-soft">Reading the note…</p>}
 
           {status === 'error' && (
             <div className="rounded-lg border border-warn-soft bg-warn-soft p-4 text-sm text-warn">
@@ -326,13 +344,13 @@ export default function Doctor() {
           )}
 
           {status === 'no_follow_up' && (
-            <div className="rounded-xl border border-line bg-surface p-5 text-center">
+            <div className="rise rounded-3xl border border-line bg-surface p-6 text-center">
               <p className="text-base text-ink">No follow-up needed for {result?.candidates?.[0]?.name || 'this patient'}.</p>
               <p className="mt-1 text-sm text-ink-soft">Nothing to send — no reminder was created.</p>
               <button
                 type="button"
                 onClick={resetAll}
-                className="mt-4 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white"
+                className="mt-4 rounded-full bg-accent px-6 py-3 text-sm font-medium text-white"
               >
                 Next patient
               </button>
@@ -340,7 +358,7 @@ export default function Doctor() {
           )}
 
           {status === 'ready' && result && (
-            <div className="space-y-4 rounded-xl border border-line bg-surface p-5">
+            <div className="rise space-y-5 rounded-3xl border border-line bg-surface p-6 shadow-[0_30px_60px_-40px_oklch(0.2_0.02_165/0.4)]">
               {result.warnings?.length > 0 && (
                 <div className="space-y-1 rounded-lg bg-accent-soft p-3 text-sm text-accent-dark">
                   {result.warnings.map((w, i) => (
@@ -350,7 +368,7 @@ export default function Doctor() {
               )}
 
               <div>
-                <p className="text-xs text-ink-soft">Patient</p>
+                <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Patient</p>
 
                 {candidates.length > 1 && (
                   <div className="mt-1.5 flex flex-wrap gap-2">
@@ -359,7 +377,7 @@ export default function Doctor() {
                         key={c.id}
                         type="button"
                         onClick={() => setSelectedPatientId(c.id)}
-                        className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                           selectedPatientId === c.id
                             ? 'border-accent bg-accent text-white'
                             : 'border-line text-ink hover:border-accent'
@@ -424,7 +442,7 @@ export default function Doctor() {
               </div>
 
               <div>
-                <p className="text-xs text-ink-soft">Follow-up date</p>
+                <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Follow-up date</p>
                 {selectedDate ? (
                   <p className="mt-0.5 text-lg font-semibold text-ink">{prettyDate(selectedDate)}</p>
                 ) : (
@@ -434,7 +452,7 @@ export default function Doctor() {
                         key={opt.label}
                         type="button"
                         onClick={() => setSelectedDate(resolveFollowUpDate(opt.days))}
-                        className="rounded-full border border-line px-3.5 py-1.5 text-sm font-medium text-ink hover:border-accent"
+                        className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-accent"
                       >
                         {opt.label}
                       </button>
@@ -444,13 +462,13 @@ export default function Doctor() {
               </div>
 
               <div>
-                <p className="text-xs text-ink-soft">Visit type</p>
+                <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Visit type</p>
                 <p className="mt-0.5 text-lg font-semibold text-ink">{VISIT_LABELS[selectedVisitType] || '—'}</p>
               </div>
 
               <div>
-                <p className="text-xs text-ink-soft">Message preview</p>
-                <p className="mt-1 rounded-lg bg-bg p-3 text-sm leading-relaxed text-ink">
+                <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Message preview</p>
+                <p className="mt-2 rounded-2xl rounded-tl-sm bg-[oklch(0.93_0.06_140)] p-4 text-sm leading-relaxed text-ink">
                   {messagePreview || 'Pick a patient and date to preview the message.'}
                 </p>
               </div>
@@ -460,14 +478,14 @@ export default function Doctor() {
       </div>
 
       {status !== 'idle' && status !== 'no_follow_up' && (
-        <div className="fixed bottom-0 left-0 right-0 border-t border-line bg-surface p-4">
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-bg via-bg/95 to-transparent p-4 pt-8">
           <div className="mx-auto max-w-md">
             {approveError && <p className="mb-2 text-center text-sm text-warn">{approveError}</p>}
             <button
               type="button"
               onClick={handleApprove}
               disabled={!canApprove}
-              className="w-full rounded-2xl bg-accent py-4 text-lg font-semibold text-white transition disabled:opacity-30"
+              className="w-full rounded-full bg-accent py-5 text-lg font-semibold text-white shadow-[0_20px_40px_-15px_oklch(0.47_0.09_170/0.8)] transition-all enabled:hover:-translate-y-0.5 enabled:active:scale-[0.98] disabled:opacity-30 disabled:shadow-none"
             >
               {approving ? 'Saving…' : 'Approve'}
             </button>
