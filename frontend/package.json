@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "dev:phone": "HTTPS=1 vite --host"
+    "dev:phone": "HTTPS=1 vite --host --port 5174"
   },
   "dependencies": {
     "react": "^19.3.1",

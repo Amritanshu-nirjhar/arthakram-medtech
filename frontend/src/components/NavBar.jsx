@@ -28,7 +28,9 @@ export default function NavBar() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-50" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" />
           </span>
-          <span className="hidden text-lg font-semibold tracking-tight min-[420px]:inline">FollowUp</span>
+          <span className="hidden font-display text-xl font-extrabold tracking-[-0.04em] min-[420px]:inline">
+            Follow<span className="text-accent">Up</span>
+          </span>
         </Link>
         <nav className="flex gap-0.5">
           {links.map((link) => (

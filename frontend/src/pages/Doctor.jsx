@@ -17,6 +17,25 @@ function getSpeechRecognitionClass() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null
 }
 
+// Plain-language fix for each Web Speech failure, so the demo never dies on "a problem".
+const SPEECH_ERRORS = {
+  'no-speech': "Didn't catch that. Tap the mic and speak right away.",
+  'not-allowed':
+    'Mic is blocked. Click the icon left of the address bar, allow Microphone, then reload. On a Mac also check System Settings → Privacy → Microphone.',
+  'service-not-allowed':
+    'Speech service is off. In Safari turn on Dictation (System Settings → Keyboard), or use Google Chrome.',
+  network: "This browser has no speech service (Brave, Arc and some Chromium builds). Use Google Chrome, or type below.",
+  'audio-capture': 'No microphone found. Plug one in or check your sound input settings.',
+  'language-not-supported': 'This browser does not support Indian English voice. Use Google Chrome.',
+}
+
+function speechBlockedReason() {
+  if (!window.isSecureContext)
+    return 'The mic only works on a secure link. Open this page on https:// (run npm run dev:phone) or on localhost.'
+  if (!getSpeechRecognitionClass()) return "This browser can't do voice input. Use Google Chrome or Safari, or type below."
+  return null
+}
+
 function MicIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -41,7 +60,9 @@ function formatElapsed(ms) {
 }
 
 export default function Doctor() {
-  const [speechSupported] = useState(() => !!getSpeechRecognitionClass())
+  const [blockedReason] = useState(speechBlockedReason)
+  const speechSupported = !blockedReason
+  const micCheckedRef = useRef(false)
   const [isListening, setIsListening] = useState(false)
   const [speechError, setSpeechError] = useState(null)
   const [noteText, setNoteText] = useState('')
@@ -99,13 +120,27 @@ export default function Doctor() {
     }
   }
 
-  function handleMicTap() {
+  async function handleMicTap() {
     if (isListening) {
       recognitionRef.current?.stop()
       return
     }
     const SpeechRecognition = getSpeechRecognitionClass()
     if (!SpeechRecognition) return
+
+    // First tap only: ask for the mic up front so a blocked/missing mic gets a precise message.
+    if (!micCheckedRef.current && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        stream.getTracks().forEach((t) => t.stop())
+        micCheckedRef.current = true
+      } catch (err) {
+        setSpeechError(
+          err.name === 'NotFoundError' ? SPEECH_ERRORS['audio-capture'] : SPEECH_ERRORS['not-allowed'],
+        )
+        return
+      }
+    }
 
     startTimerIfNeeded()
     setSpeechError(null)
@@ -133,13 +168,8 @@ export default function Doctor() {
     }
     recognition.onerror = (event) => {
       setIsListening(false)
-      if (event.error === 'no-speech') {
-        setSpeechError("Didn't catch that — try again or type it below.")
-      } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        setSpeechError('Microphone access was blocked — type the note instead.')
-      } else {
-        setSpeechError('Voice input had a problem — type the note instead.')
-      }
+      if (event.error === 'aborted') return
+      setSpeechError(SPEECH_ERRORS[event.error] || `Voice input failed (${event.error}). Type the note below.`)
     }
     recognition.onend = () => {
       setIsListening(false)
@@ -149,7 +179,11 @@ export default function Doctor() {
     }
 
     recognitionRef.current = recognition
-    recognition.start()
+    try {
+      recognition.start()
+    } catch {
+      setSpeechError('Voice input is still busy. Wait a second and tap again.')
+    }
   }
 
   function handleTextChange(e) {
@@ -321,14 +355,14 @@ export default function Doctor() {
           </h1>
           <div
             className={`rounded-full px-4 py-1.5 font-mono text-sm tabular-nums transition-colors ${
-              elapsedMs > 0 ? (elapsedMs > 15000 ? 'bg-warn-soft text-warn' : 'bg-lime text-ink') : 'bg-surface text-ink-soft'
+              elapsedMs > 0 ? (elapsedMs > 15000 ? 'bg-accent text-white' : 'bg-lime text-ink') : 'bg-surface text-ink-soft'
             }`}
             aria-label="Stopwatch"
           >
             ⏱ {formatElapsed(elapsedMs)}
           </div>
           <div className="relative flex h-48 w-48 items-center justify-center">
-          <svg className="absolute inset-0 -rotate-90" viewBox="0 0 192 192" aria-hidden>
+          <svg className="pointer-events-none absolute inset-0 -rotate-90" viewBox="0 0 192 192" aria-hidden>
             <circle cx="96" cy="96" r={RING_R} fill="none" strokeWidth="5" className="stroke-line" />
             <circle
               cx="96"
@@ -339,7 +373,7 @@ export default function Doctor() {
               strokeLinecap="round"
               strokeDasharray={RING_C}
               strokeDashoffset={RING_C * (1 - ringProgress)}
-              className={`transition-[stroke-dashoffset] duration-300 ease-linear ${overLimit ? 'stroke-warn' : 'stroke-accent'}`}
+              className={`transition-[stroke-dashoffset] duration-300 ease-linear ${overLimit ? 'stroke-accent' : 'stroke-ink'}`}
             />
           </svg>
           <button
@@ -348,7 +382,7 @@ export default function Doctor() {
             aria-label={isListening ? 'Stop listening' : 'Start voice note'}
             disabled={!speechSupported}
             aria-pressed={isListening}
-            className={`flex h-36 w-36 items-center justify-center rounded-full text-white shadow-[0_20px_50px_-15px_oklch(0.47_0.09_170/0.7)] transition-all duration-300 hover:scale-105 active:scale-95 ${
+            className={`relative flex h-36 w-36 items-center justify-center rounded-full text-white shadow-[0_20px_50px_-15px_oklch(0.57_0.2_30/0.7)] transition-all duration-300 hover:scale-105 active:scale-95 ${
               isListening ? 'mic-listening bg-accent-dark' : 'bg-accent'
             } ${!speechSupported ? 'opacity-40' : ''}`}
           >
@@ -365,7 +399,7 @@ export default function Doctor() {
           </div>
           <p className="text-sm text-ink-soft">
             {!speechSupported
-              ? 'Voice input is not supported here — type the note below.'
+              ? blockedReason
               : isListening
                 ? 'Listening — speak the note now'
                 : 'Tap and say the note'}
@@ -450,7 +484,7 @@ export default function Doctor() {
           )}
 
           {status === 'ready' && result && (
-            <div className="rise space-y-5 rounded-3xl border border-line bg-surface p-6 shadow-[0_30px_60px_-40px_oklch(0.2_0.02_165/0.4)]">
+            <div className="rise space-y-5 rounded-3xl border border-line bg-surface p-6 shadow-[0_30px_60px_-40px_oklch(0.22_0.035_265/0.4)]">
               {result.warnings?.length > 0 && (
                 <div className="space-y-1 rounded-lg bg-accent-soft p-3 text-sm text-accent-dark">
                   {result.warnings.map((w, i) => (
@@ -483,7 +517,7 @@ export default function Doctor() {
                 )}
 
                 {candidates.length === 1 && (
-                  <p className="mt-0.5 text-lg font-semibold text-ink">{selectedPatient?.name}</p>
+                  <p className="mt-0.5 font-display text-3xl font-extrabold tracking-[-0.04em] text-ink">{selectedPatient?.name}</p>
                 )}
 
                 {candidates.length === 0 && (
@@ -577,7 +611,7 @@ export default function Doctor() {
               type="button"
               onClick={handleApprove}
               disabled={!canApprove}
-              className="w-full rounded-full bg-accent py-5 text-lg font-semibold text-white shadow-[0_20px_40px_-15px_oklch(0.47_0.09_170/0.8)] transition-all enabled:hover:-translate-y-0.5 enabled:active:scale-[0.98] disabled:opacity-30 disabled:shadow-none"
+              className="w-full rounded-full bg-accent py-5 text-lg font-semibold text-white shadow-[0_20px_40px_-15px_oklch(0.57_0.2_30/0.8)] transition-all enabled:hover:-translate-y-0.5 enabled:active:scale-[0.98] disabled:opacity-30 disabled:shadow-none"
             >
               {approving ? 'Saving…' : 'Approve'}
             </button>

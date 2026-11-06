@@ -1,9 +1,9 @@
 const STATUS_STYLES = {
   approved: { label: 'Approved', className: 'border border-line text-ink-soft' },
-  sent: { label: 'Sent', className: 'bg-accent-soft text-accent-dark' },
-  confirmed: { label: 'Confirmed', className: 'bg-accent text-white' },
+  sent: { label: 'Sent', className: 'bg-[oklch(0.92_0.04_250)] text-ink' },
+  confirmed: { label: 'Confirmed', className: 'bg-lime text-ink' },
   visited: { label: 'Visited', className: 'bg-ink text-white' },
-  missed: { label: 'Missed', className: 'bg-warn-soft text-warn' },
+  missed: { label: 'Missed', className: 'bg-accent text-white' },
 }
 
 export default function StatusBadge({ status }) {

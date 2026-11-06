@@ -41,7 +41,7 @@ npm run dev
 
 Opens on http://localhost:5173. API calls go through `/api`, which Vite proxies to the backend on port 8000.
 
-**Demo on a phone:** the mic only works over HTTPS, so run `npm run dev:phone`, open the `https://<laptop-ip>:5173` address it prints on the phone (same Wi-Fi), and accept the self-signed certificate warning.
+**Demo on a phone:** the mic only works over HTTPS, so run `npm run dev:phone`, open the `https://<laptop-ip>:5174` address it prints on the phone (same Wi-Fi), and accept the self-signed certificate warning.
 
 Reset + seed the demo DB: `cd backend && python -m app.seed` · Tests: `cd backend && pytest -q`
 

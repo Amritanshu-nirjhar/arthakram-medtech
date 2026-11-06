@@ -31,10 +31,10 @@ const FIELDS = [
 // Current-status breakdown (each reminder counted once, in its present status).
 const STATUS_SEGMENTS = [
   { key: 'approved', label: 'Waiting to send', className: 'bg-line' },
-  { key: 'sent', label: 'Sent', className: 'bg-accent-soft' },
-  { key: 'confirmed', label: 'Confirmed', className: 'bg-accent' },
+  { key: 'sent', label: 'Sent', className: 'bg-[oklch(0.8_0.07_250)]' },
+  { key: 'confirmed', label: 'Confirmed', className: 'bg-lime' },
   { key: 'visited', label: 'Visited', className: 'bg-ink' },
-  { key: 'missed', label: 'Missed', className: 'bg-warn' },
+  { key: 'missed', label: 'Missed', className: 'bg-accent' },
 ]
 
 function fmtNum(n) {

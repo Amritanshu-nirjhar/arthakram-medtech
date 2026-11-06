@@ -1,22 +1,25 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Caveat:wght@500;700&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap");
 @import "tailwindcss";
 
+/* Concept: a doctor's prescription pad. Cream paper, ink, a red stamp, a yellow highlighter.
+   Handwriting (Caveat) = what the doctor says; crisp grotesque = what the system sends. */
 @theme {
-  --font-sans: "Inter Tight", "Segoe UI", system-ui, sans-serif;
-  --font-serif: "Instrument Serif", Georgia, serif;
+  --font-sans: "Geist", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Geist", system-ui, sans-serif;
+  --font-hand: "Caveat", "Segoe Print", cursive;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* paper, ink, one green pulse */
-  --color-bg: oklch(0.972 0.008 110);
-  --color-surface: oklch(0.995 0.003 110);
-  --color-ink: oklch(0.2 0.02 165);
-  --color-ink-soft: oklch(0.48 0.02 165);
-  --color-line: oklch(0.9 0.01 140);
-  --color-accent: oklch(0.47 0.09 170);
-  --color-accent-dark: oklch(0.34 0.07 170);
-  --color-accent-soft: oklch(0.94 0.035 165);
-  --color-lime: oklch(0.9 0.17 125);
-  --color-warn: oklch(0.55 0.15 45);
-  --color-warn-soft: oklch(0.94 0.04 50);
+  --color-bg: oklch(0.965 0.018 85);
+  --color-surface: oklch(0.99 0.008 85);
+  --color-ink: oklch(0.22 0.035 265);
+  --color-ink-soft: oklch(0.47 0.03 265);
+  --color-line: oklch(0.88 0.02 80);
+  --color-accent: oklch(0.57 0.2 30);
+  --color-accent-dark: oklch(0.47 0.17 30);
+  --color-accent-soft: oklch(0.93 0.045 40);
+  --color-lime: oklch(0.92 0.16 100);
+  --color-warn: oklch(0.55 0.14 60);
+  --color-warn-soft: oklch(0.94 0.05 75);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -48,16 +51,33 @@ body {
   outline-offset: 3px;
 }
 
-/* subtle paper grain */
+/* background: paper grain + faint ruled lines, and two slow-drifting glows (stamp red, highlighter yellow) */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.35;
-  background-image: radial-gradient(oklch(0.2 0.02 165 / 0.06) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(to bottom, transparent 0 39px, oklch(0.55 0.08 250 / 0.07) 39px 40px);
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: -20vmax;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(35vmax 35vmax at 15% 10%, oklch(0.8 0.13 35 / 0.28), transparent 70%),
+    radial-gradient(40vmax 40vmax at 90% 85%, oklch(0.93 0.15 100 / 0.45), transparent 70%);
+  filter: blur(20px);
+  animation: glow-drift 24s ease-in-out infinite alternate;
+}
+@keyframes glow-drift {
+  to {
+    transform: translate(4vmax, -3vmax) rotate(8deg);
+  }
 }
 #root {
   position: relative;
@@ -65,10 +85,33 @@ body::before {
 }
 
 .display {
-  font-family: var(--font-serif);
-  font-weight: 400;
-  letter-spacing: -0.03em;
-  line-height: 0.9;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: "opsz" 96;
+  letter-spacing: -0.035em;
+  line-height: 0.88;
+}
+/* the accent word in every big heading is "handwritten" in stamp red */
+.display em {
+  display: inline-block;
+  font-family: var(--font-hand);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 1.12em;
+  line-height: 0.8;
+  color: var(--color-accent);
+  transform: rotate(-3deg);
+}
+.hand {
+  font-family: var(--font-hand);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+/* yellow highlighter swipe behind a word */
+.highlight {
+  background: linear-gradient(transparent 55%, var(--color-lime) 55% 92%, transparent 92%);
+  padding: 0 0.1em;
 }
 
 /* ---------- scroll progress (native scroll timeline, no JS) ---------- */
@@ -197,13 +240,13 @@ body::before {
 /* mic + waves */
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 oklch(0.47 0.09 170 / 0.4);
+    box-shadow: 0 0 0 0 oklch(0.57 0.2 30 / 0.4);
   }
   70% {
-    box-shadow: 0 0 0 28px oklch(0.47 0.09 170 / 0);
+    box-shadow: 0 0 0 28px oklch(0.57 0.2 30 / 0);
   }
   100% {
-    box-shadow: 0 0 0 0 oklch(0.47 0.09 170 / 0);
+    box-shadow: 0 0 0 0 oklch(0.57 0.2 30 / 0);
   }
 }
 .mic-listening {

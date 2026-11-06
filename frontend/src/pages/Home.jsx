@@ -90,7 +90,7 @@ function Wave({ className = '' }) {
 function Phone({ step, className = '' }) {
   return (
     <div className={`mx-auto w-full max-w-[300px] ${className}`}>
-      <div className="rounded-[2.6rem] bg-ink p-2.5 shadow-[0_40px_80px_-30px_oklch(0.2_0.02_165/0.5)]">
+      <div className="rounded-[2.6rem] bg-ink p-2.5 shadow-[0_40px_80px_-30px_oklch(0.22_0.035_265/0.5)]">
         <div className="relative h-[540px] overflow-hidden rounded-[2.1rem] bg-surface">
           <div className="absolute left-1/2 top-2.5 h-5 w-20 -translate-x-1/2 rounded-full bg-ink" />
           <div className="flex items-center justify-between px-6 pt-11 text-[11px] font-medium text-ink-soft">
@@ -114,7 +114,7 @@ function Phone({ step, className = '' }) {
                     <Wave />
                   </div>
                   <p className="mt-8 text-xs uppercase tracking-[0.2em] text-ink-soft">Listening</p>
-                  <p className="caret mt-3 text-lg leading-snug text-ink">
+                  <p className="caret hand mt-3 text-[1.7rem] leading-tight text-ink">
                     &ldquo;Anil Verma, BP high, started amlodipine 5mg, review in 10 days&rdquo;
                   </p>
                 </div>
@@ -229,7 +229,7 @@ export default function Home() {
 
       {/* HERO */}
       <section className="relative mx-auto flex min-h-[calc(100svh-4rem)] max-w-6xl flex-col justify-center px-4 pb-16 pt-10 sm:px-8">
-        <div className="pointer-events-none absolute -right-40 top-10 h-[520px] w-[520px] rounded-full bg-lime/40 blur-[120px]" />
+        <div className="pointer-events-none absolute -right-40 top-10 h-[520px] w-[520px] rounded-full bg-accent/15 blur-[120px]" />
         <p className="rise text-xs uppercase tracking-[0.25em] text-ink-soft">
           For busy clinics · WhatsApp follow-ups
         </p>
@@ -243,6 +243,19 @@ export default function Home() {
             </span>
           </span>
         </h1>
+        <p
+          className="hand rise pointer-events-none absolute right-8 top-[38%] hidden rotate-[-6deg] text-4xl leading-none text-accent lg:block"
+          style={{ '--i': 5 }}
+          aria-hidden
+        >
+          one line,
+          <br />
+          two taps.
+          <svg viewBox="0 0 120 60" className="mt-2 h-14 w-28" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+            <path d="M110 8 C 80 10, 40 20, 14 48" />
+            <path d="M14 48 L 16 30 M14 48 L 32 44" />
+          </svg>
+        </p>
         <div className="mt-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <p className="rise max-w-md text-lg leading-relaxed text-ink-soft sm:text-xl" style={{ '--i': 6 }}>
             The doctor says one line. The patient gets a WhatsApp reminder. Nobody fills a form, and nobody forgets a
@@ -253,7 +266,7 @@ export default function Home() {
               to="/doctor"
               className="group inline-flex items-center gap-3 rounded-full bg-ink px-7 py-4 text-base font-medium text-white transition-transform duration-200 hover:-translate-y-0.5"
             >
-              <span className="h-2 w-2 rounded-full bg-lime transition-transform group-hover:scale-150" />
+              <span className="h-2 w-2 rounded-full bg-accent transition-transform group-hover:scale-150" />
               Try the doctor screen
             </Link>
             <a
@@ -271,9 +284,9 @@ export default function Home() {
         <div className="overflow-hidden">
           <div className="marquee gap-10 pr-10">
             {[...SAMPLE_NOTES, ...SAMPLE_NOTES].map((n, i) => (
-              <span key={i} className="flex shrink-0 items-center gap-10 text-2xl text-ink sm:text-3xl">
-                <span className="display italic">&ldquo;{n}&rdquo;</span>
-                <span className="h-2 w-2 rounded-full bg-accent" />
+              <span key={i} className="flex shrink-0 items-center gap-10 text-4xl text-ink sm:text-5xl">
+                <span className="hand">{n}</span>
+                <span className="text-2xl text-accent">✱</span>
               </span>
             ))}
           </div>
@@ -288,7 +301,7 @@ export default function Home() {
           </p>
           <div className="md:col-span-9">
             <p data-reveal className="display text-[clamp(2.4rem,5.5vw,4.8rem)] text-ink">
-              Notes live on paper. <span className="text-ink-soft">Three in ten</span> follow-ups never come back.
+              Notes live on paper. <span className="highlight">Three in ten</span> follow-ups never come back.
             </p>
             <p data-reveal style={{ '--i': 1 }} className="mt-8 max-w-xl text-lg leading-relaxed text-ink-soft">
               The doctor won&rsquo;t touch anything that takes longer than fifteen seconds. So we built the one thing
@@ -313,7 +326,7 @@ export default function Home() {
           <div className="mt-16 grid gap-6 md:grid-cols-2">
             <div data-reveal className="rounded-3xl border border-white/15 p-7">
               <p className="text-xs uppercase tracking-[0.2em] text-white/50">What the doctor said</p>
-              <p className="mt-4 text-2xl leading-snug">
+              <p className="hand mt-4 text-4xl leading-snug">
                 Anil Verma, <span className="strike">BP high</span>, started{' '}
                 <span className="strike" style={{ '--i': 1 }}>
                   amlodipine
@@ -383,9 +396,9 @@ export default function Home() {
       <section className="relative overflow-hidden px-4 pb-24 sm:px-8">
         <div
           data-reveal
-          className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-accent px-8 py-20 text-white md:px-16 md:py-28"
+          className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-ink px-8 py-20 text-white md:px-16 md:py-28"
         >
-          <div className="drift pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full border-[40px] border-lime/30" />
+          <div className="drift pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full border-[40px] border-accent/40" />
           <h2 className="display relative max-w-3xl text-[clamp(3rem,8vw,7rem)]">Next patient?</h2>
           <div className="relative mt-10 flex flex-wrap gap-3">
             <Link

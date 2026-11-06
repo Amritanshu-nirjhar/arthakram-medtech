@@ -190,7 +190,7 @@ export default function Reception() {
                   <div className="flex min-w-0 flex-1 gap-4">
                   <div
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-                      r.status === 'approved' ? 'bg-lime text-ink' : 'bg-accent-soft text-accent-dark'
+                      r.status === 'approved' ? 'bg-lime text-ink' : 'bg-ink/[0.06] text-ink'
                     }`}
                     aria-hidden
                   >
@@ -202,7 +202,7 @@ export default function Reception() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-semibold tracking-tight text-ink">{r.patient_name}</p>
+                      <p className="font-display text-xl font-bold tracking-[-0.03em] text-ink">{r.patient_name}</p>
                       <StatusBadge status={r.status} />
                     </div>
                     <p className="mt-0.5 text-sm text-ink-soft">
