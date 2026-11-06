@@ -6,3 +6,5 @@ rapidfuzz
 python-dotenv
 pytest
 httpx
+python-multipart
+faster-whisper

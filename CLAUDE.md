@@ -16,10 +16,11 @@ A clinic tool: doctor speaks one line ("Ramesh Kumar, review after 2 weeks") →
 - Backend: FastAPI + SQLModel + SQLite, Python 3.11+, in `backend/`
 - Frontend: React + Vite + Tailwind, in `frontend/`
 - AI: Anthropic Python SDK, model from `ANTHROPIC_MODEL` env var; rule-based fallback when no key
-- Voice: browser Web Speech API (`en-IN`) + text box fallback
+- Voice: recorded in browser, transcribed by backend `POST /transcribe` (faster-whisper, local); falls back to browser Web Speech API (`en-IN`); text box always available
 - WhatsApp: `https://wa.me/91<phone>?text=<urlencoded>`
 
 ## Commands (keep these up to date as the project is scaffolded)
+- Everything at once: `./dev.sh` (add `--phone` for the HTTPS phone server)
 - Backend dev: `cd backend && uvicorn app.main:app --reload --port 8000`
 - Backend tests: `cd backend && pytest -q`
 - Reset + seed DB: `cd backend && python -m app.seed`

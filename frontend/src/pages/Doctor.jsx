@@ -5,6 +5,8 @@ import {
   approveReminder,
   buildMessagePreview,
   deleteReminder,
+  getHealth,
+  transcribeAudio,
   firstNameOf,
   parseNote,
   prettyDate,
@@ -29,12 +31,17 @@ const SPEECH_ERRORS = {
   'language-not-supported': 'This browser does not support Indian English voice. Use Google Chrome.',
 }
 
-function speechBlockedReason() {
+function micBlockedReason(serverStt) {
   if (!window.isSecureContext)
     return 'The mic only works on a secure link. Open this page on https:// (run npm run dev:phone) or on localhost.'
+  if (serverStt) return navigator.mediaDevices && window.MediaRecorder ? null : "This browser can't record audio. Type the note below."
   if (!getSpeechRecognitionClass()) return "This browser can't do voice input. Use Google Chrome or Safari, or type below."
   return null
 }
+
+const SILENCE_STOP_MS = 1300 // stop this long after the doctor stops talking
+const MAX_RECORD_MS = 12000
+const SPEECH_LEVEL = 0.06 // mic RMS above this counts as speech
 
 function MicIcon(props) {
   return (
@@ -60,10 +67,14 @@ function formatElapsed(ms) {
 }
 
 export default function Doctor() {
-  const [blockedReason] = useState(speechBlockedReason)
+  // true = record + transcribe on our server (works in any browser); false = browser Web Speech
+  const [serverStt, setServerStt] = useState(null)
+  const blockedReason = micBlockedReason(serverStt)
   const speechSupported = !blockedReason
-  const micCheckedRef = useRef(false)
   const [isListening, setIsListening] = useState(false)
+  const [heardVoice, setHeardVoice] = useState(false)
+  const micBtnRef = useRef(null)
+  const recorderRef = useRef(null)
   const [speechError, setSpeechError] = useState(null)
   const [noteText, setNoteText] = useState('')
 
@@ -97,9 +108,16 @@ export default function Doctor() {
   const searchTimeoutRef = useRef(null)
 
   useEffect(() => {
+    getHealth()
+      .then((h) => setServerStt(!!h?.stt))
+      .catch(() => setServerStt(false))
+  }, [])
+
+  useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current)
       recognitionRef.current?.abort?.()
+      recorderRef.current?.stop()
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
     }
@@ -120,27 +138,105 @@ export default function Doctor() {
     }
   }
 
-  async function handleMicTap() {
+  function handleMicTap() {
     if (isListening) {
+      recorderRef.current?.stop()
       recognitionRef.current?.stop()
       return
     }
-    const SpeechRecognition = getSpeechRecognitionClass()
-    if (!SpeechRecognition) return
+    if (serverStt) recordAndTranscribe()
+    else startBrowserSpeech()
+  }
 
-    // First tap only: ask for the mic up front so a blocked/missing mic gets a precise message.
-    if (!micCheckedRef.current && navigator.mediaDevices?.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        stream.getTracks().forEach((t) => t.stop())
-        micCheckedRef.current = true
-      } catch (err) {
+  // Record with MediaRecorder, auto-stop on silence, transcribe on the backend.
+  async function recordAndTranscribe() {
+    setSpeechError(null)
+    let stream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      })
+    } catch (err) {
+      setSpeechError(err.name === 'NotFoundError' ? SPEECH_ERRORS['audio-capture'] : SPEECH_ERRORS['not-allowed'])
+      return
+    }
+    startTimerIfNeeded()
+    setNoteText('')
+    setHeardVoice(false)
+
+    const chunks = []
+    const recorder = new MediaRecorder(stream)
+    recorderRef.current = recorder
+    recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data)
+
+    // Level meter: drives the glow around the mic, and stops recording after a pause.
+    const ctx = new AudioContext()
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 1024
+    ctx.createMediaStreamSource(stream).connect(analyser)
+    const buf = new Float32Array(analyser.fftSize)
+    const startedAt = performance.now()
+    let spoke = false
+    let lastLoud = startedAt
+    let raf
+    const tick = () => {
+      analyser.getFloatTimeDomainData(buf)
+      const rms = Math.sqrt(buf.reduce((a, v) => a + v * v, 0) / buf.length)
+      micBtnRef.current?.style.setProperty('--level', Math.min(rms * 6, 1).toFixed(3))
+      const now = performance.now()
+      if (rms > SPEECH_LEVEL) {
+        lastLoud = now
+        if (!spoke) {
+          spoke = true
+          setHeardVoice(true)
+        }
+      }
+      const silentFor = now - lastLoud
+      if ((spoke && silentFor > SILENCE_STOP_MS) || now - startedAt > MAX_RECORD_MS) {
+        if (recorder.state === 'recording') recorder.stop()
+        return
+      }
+      raf = requestAnimationFrame(tick)
+    }
+
+    recorder.onstop = async () => {
+      cancelAnimationFrame(raf)
+      stream.getTracks().forEach((t) => t.stop())
+      ctx.close()
+      micBtnRef.current?.style.setProperty('--level', 0)
+      recorderRef.current = null
+      setIsListening(false)
+      if (!spoke) {
         setSpeechError(
-          err.name === 'NotFoundError' ? SPEECH_ERRORS['audio-capture'] : SPEECH_ERRORS['not-allowed'],
+          "Didn't hear anything. Check your Mac's input mic (System Settings → Sound → Input) and speak right after tapping.",
         )
         return
       }
+      setStatus('parsing')
+      try {
+        const text = await transcribeAudio(new Blob(chunks, { type: recorder.mimeType }))
+        if (!text) {
+          setStatus('idle')
+          setSpeechError("Couldn't make out any words. Try again a little closer to the mic.")
+          return
+        }
+        setNoteText(text)
+        submitNote(text)
+      } catch (err) {
+        if (err.status === 503) setServerStt(false) // server can't transcribe: fall back to browser speech
+        setStatus('idle')
+        setSpeechError(err.message)
+      }
     }
+
+    recorder.start()
+    setIsListening(true)
+    raf = requestAnimationFrame(tick)
+  }
+
+  function startBrowserSpeech() {
+    const SpeechRecognition = getSpeechRecognitionClass()
+    if (!SpeechRecognition) return
 
     startTimerIfNeeded()
     setSpeechError(null)
@@ -377,13 +473,18 @@ export default function Doctor() {
             />
           </svg>
           <button
+            ref={micBtnRef}
             type="button"
             onClick={handleMicTap}
             aria-label={isListening ? 'Stop listening' : 'Start voice note'}
+            style={{
+              boxShadow:
+                '0 0 0 calc(var(--level, 0) * 44px) oklch(0.57 0.2 30 / 0.22), 0 20px 50px -15px oklch(0.57 0.2 30 / 0.7)',
+            }}
             disabled={!speechSupported}
             aria-pressed={isListening}
             className={`relative flex h-36 w-36 items-center justify-center rounded-full text-white shadow-[0_20px_50px_-15px_oklch(0.57_0.2_30/0.7)] transition-all duration-300 hover:scale-105 active:scale-95 ${
-              isListening ? 'mic-listening bg-accent-dark' : 'bg-accent'
+              isListening ? `bg-accent-dark ${serverStt ? '' : 'mic-listening'}` : 'bg-accent'
             } ${!speechSupported ? 'opacity-40' : ''}`}
           >
             {isListening ? (
@@ -401,7 +502,11 @@ export default function Doctor() {
             {!speechSupported
               ? blockedReason
               : isListening
-                ? 'Listening — speak the note now'
+                ? heardVoice
+                  ? 'Hearing you… stop talking and it sends itself'
+                  : 'Listening, speak now'
+                : status === 'parsing' && serverStt
+                  ? 'Writing it down…'
                 : 'Tap and say the note'}
           </p>
           {speechError && <p className="text-sm text-warn">{speechError}</p>}

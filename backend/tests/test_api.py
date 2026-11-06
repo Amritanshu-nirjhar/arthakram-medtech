@@ -43,7 +43,7 @@ def client(tmp_path, monkeypatch):
 def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
-    assert r.json() == {"status": "ok"}
+    assert r.json()["status"] == "ok"
 
 
 def test_notes_parse_single_match(client):

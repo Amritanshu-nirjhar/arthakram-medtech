@@ -380,6 +380,26 @@ export async function updateReminderStatus(id, status) {
   return request(`/reminders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
 }
 
+export async function getHealth() {
+  if (USE_MOCK) return { status: 'ok', stt: false }
+  return request('/health')
+}
+
+// Voice note -> text on our own server (faster-whisper). Multipart, so no JSON header.
+export async function transcribeAudio(blob) {
+  const form = new FormData()
+  form.append('audio', blob, 'note.webm')
+  let res
+  try {
+    res = await fetch(`${BASE_URL}/transcribe`, { method: 'POST', body: form })
+  } catch {
+    throw new Error('Could not reach the server. Is the backend running?')
+  }
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw Object.assign(new Error(body.detail || `Transcribe failed (${res.status})`), { status: res.status })
+  return body.text || ''
+}
+
 export async function deleteReminder(id) {
   if (USE_MOCK) return null
   return request(`/reminders/${id}`, { method: 'DELETE' })

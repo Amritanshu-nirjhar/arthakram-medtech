@@ -3,12 +3,14 @@ from datetime import date, datetime, timezone
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from .dates import adjust_for_sunday, compute_final_date, pretty_date
+from . import stt
 from .db import create_db_and_tables, get_session
 from .extractor import extract
 from .matching import find_candidates
@@ -22,6 +24,7 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    stt.warm_up()
     yield
 
 
@@ -37,7 +40,29 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "stt": stt.available()}
+
+
+MAX_AUDIO_BYTES = 5_000_000  # ~1 min of compressed speech; a note is ~5 s
+
+
+@app.post("/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...), session: Session = Depends(get_session)):
+    """Doctor's recorded voice note -> text. The text is only ever fed to /notes/parse."""
+    if not stt.available():
+        raise HTTPException(status_code=503, detail="speech-to-text is not installed on the server")
+    data = await audio.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="empty audio")
+    if len(data) > MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="audio too long")
+    names = session.exec(select(Patient.name)).all()
+    hint = "Clinic follow-up note. Patients: " + ", ".join(names) + ". Review after 2 weeks. 15 din baad bulao."
+    try:
+        text = await run_in_threadpool(stt.transcribe, data, hint)
+    except Exception:
+        raise HTTPException(status_code=422, detail="could not read that audio, try again")
+    return {"text": text}
 
 
 # --------------------------------------------------------------------------

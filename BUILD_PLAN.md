@@ -219,6 +219,7 @@ Hi {first_name}, this is a reminder from {clinic_name}. {doctor_name} would like
 | DELETE | `/reminders/{id}` | undo an approve; only while status is `approved` (409 otherwise) → 204 |
 | GET | `/patients?search=` | quick patient search (for the tap-to-choose fallback) |
 | GET | `/stats` | dashboard numbers |
+| POST | `/transcribe` | multipart `audio` (webm/mp4 voice note) → `{text}` via local faster-whisper; 503 if not installed. Text is only fed to `/notes/parse`. |
 
 ---
 
