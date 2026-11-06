@@ -457,6 +457,7 @@ export default function Doctor() {
 
       <div className="mx-auto max-w-md px-4 pt-6">
         <div className="flex flex-col items-center gap-4 pb-8 pt-4 text-center">
+          <p className="nb-tab">OPD · Doctor</p>
           <h1 className="display text-5xl text-ink sm:text-6xl">
             Next <em className="text-accent">patient</em>
           </h1>
@@ -491,11 +492,11 @@ export default function Doctor() {
             aria-label={isListening ? 'Stop listening' : 'Start voice note'}
             style={{
               boxShadow:
-                '0 0 0 calc(var(--level, 0) * 44px) oklch(0.57 0.2 30 / 0.22), 0 20px 50px -15px oklch(0.57 0.2 30 / 0.7)',
+                '0 0 0 calc(var(--level, 0) * 44px) oklch(0.53 0.2 30 / 0.22), 0 20px 50px -15px oklch(0.53 0.2 30 / 0.7)',
             }}
             disabled={!speechSupported}
             aria-pressed={isListening}
-            className={`relative flex h-36 w-36 items-center justify-center rounded-full text-white shadow-[0_20px_50px_-15px_oklch(0.57_0.2_30/0.7)] transition-all duration-300 hover:scale-105 active:scale-95 ${
+            className={`relative flex h-36 w-36 items-center justify-center rounded-full text-white transition-all duration-300 hover:scale-105 active:scale-95 ${
               isListening ? `bg-accent-dark ${serverStt ? '' : 'mic-listening'}` : 'bg-accent'
             } ${!speechSupported ? 'opacity-40' : ''}`}
           >
@@ -551,7 +552,7 @@ export default function Doctor() {
 
         {status === 'idle' && !noteText && (
           <div className="pt-3">
-            <p className="text-center text-[11px] uppercase tracking-[0.15em] text-ink-soft">or tap an example</p>
+            <p className="text-center label text-ink-soft">or tap an example</p>
             <div className="mt-2 flex flex-wrap justify-center gap-2">
               {EXAMPLE_NOTES.map((n, i) => (
                 <button
@@ -559,7 +560,7 @@ export default function Doctor() {
                   type="button"
                   onClick={() => tryExample(n)}
                   style={{ '--i': i }}
-                  className="rise rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink transition-colors hover:border-accent hover:text-accent"
+                  className="rise inline-flex min-h-11 items-center rounded-full border border-line bg-surface px-4 text-sm text-ink transition-colors hover:border-accent hover:text-accent"
                 >
                   &ldquo;{n}&rdquo;
                 </button>
@@ -578,7 +579,7 @@ export default function Doctor() {
           )}
 
           {status === 'error' && (
-            <div className="rounded-lg border border-warn-soft bg-warn-soft p-4 text-sm text-warn">
+            <div className="rounded-2xl border border-warn-soft bg-warn-soft p-4 text-sm text-warn">
               <p>{parseError}</p>
               <button type="button" onClick={() => submitNote(noteText)} className="mt-1 font-medium underline">
                 Try again
@@ -601,7 +602,7 @@ export default function Doctor() {
           )}
 
           {status === 'ready' && result && (
-            <div className="rise relative space-y-5 rounded-3xl border border-line bg-surface p-6 shadow-[0_30px_60px_-40px_oklch(0.22_0.035_265/0.4)]">
+            <div className="rise relative space-y-5 rounded-3xl border border-line bg-surface p-6 elev-1">
               {stampSeconds != null && (
                 <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-surface/40">
                   <div className="stamp" role="status">
@@ -610,7 +611,7 @@ export default function Doctor() {
                 </div>
               )}
               {result.warnings?.length > 0 && (
-                <div className="space-y-1 rounded-lg bg-accent-soft p-3 text-sm text-accent-dark">
+                <div className="space-y-1 rounded-2xl bg-accent-soft p-3 text-sm text-accent-dark">
                   {result.warnings.map((w, i) => (
                     <p key={i}>{w}</p>
                   ))}
@@ -618,7 +619,7 @@ export default function Doctor() {
               )}
 
               <div>
-                <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Patient</p>
+                <p className="label text-ink-soft">Patient</p>
 
                 {candidates.length > 1 && (
                   <div className="mt-1.5 flex flex-wrap gap-2">
@@ -627,7 +628,7 @@ export default function Doctor() {
                         key={c.id}
                         type="button"
                         onClick={() => setSelectedPatientId(c.id)}
-                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                        className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium transition-colors ${
                           selectedPatientId === c.id
                             ? 'border-accent bg-accent text-white'
                             : 'border-line text-ink hover:border-accent'
@@ -652,7 +653,7 @@ export default function Doctor() {
                   <button
                     type="button"
                     onClick={() => setShowSearch(true)}
-                    className="mt-2 text-sm text-ink-soft underline"
+                    className="mt-1 inline-flex min-h-11 items-center text-sm text-ink-soft underline underline-offset-4 hover:text-ink"
                   >
                     Not the right patient? Search
                   </button>
@@ -668,18 +669,18 @@ export default function Doctor() {
                       value={searchQuery}
                       onChange={(e) => handleSearchChange(e.target.value)}
                       placeholder="Search patient by name"
-                      className="w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                      className="w-full rounded-2xl border border-line px-3 py-2 text-sm focus:border-accent focus:outline-none"
                     />
                     {searchLoading && <p className="mt-1 text-xs text-ink-soft">Searching…</p>}
                     {searchError && <p className="mt-1 text-xs text-warn">{searchError}</p>}
                     {searchResults.length > 0 && (
-                      <ul className="mt-1 divide-y divide-line overflow-hidden rounded-lg border border-line">
+                      <ul className="mt-1 divide-y divide-line overflow-hidden rounded-2xl border border-line">
                         {searchResults.map((p) => (
                           <li key={p.id}>
                             <button
                               type="button"
                               onClick={() => pickSearchedPatient(p)}
-                              className="block w-full px-3 py-2 text-left text-sm hover:bg-bg"
+                              className="block min-h-11 w-full px-4 py-3 text-left text-sm hover:bg-bg"
                             >
                               {p.name}
                             </button>
@@ -692,7 +693,7 @@ export default function Doctor() {
               </div>
 
               <div>
-                <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Follow-up date</p>
+                <p className="label text-ink-soft">Follow-up date</p>
                 {selectedDate ? (
                   <p className="mt-0.5 text-lg font-semibold text-ink">{prettyDate(selectedDate)}</p>
                 ) : (
@@ -702,7 +703,7 @@ export default function Doctor() {
                         key={opt.label}
                         type="button"
                         onClick={() => setSelectedDate(resolveFollowUpDate(opt.days))}
-                        className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-accent"
+                        className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm font-medium text-ink hover:border-accent"
                       >
                         {opt.label}
                       </button>
@@ -712,12 +713,12 @@ export default function Doctor() {
               </div>
 
               <div>
-                <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Visit type</p>
+                <p className="label text-ink-soft">Visit type</p>
                 <p className="mt-0.5 text-lg font-semibold text-ink">{VISIT_LABELS[selectedVisitType] || '—'}</p>
               </div>
 
               <div>
-                <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Message preview</p>
+                <p className="label text-ink-soft">Message preview</p>
                 <p className="mt-2 rounded-2xl rounded-tl-sm bg-[oklch(0.93_0.06_140)] p-4 text-sm leading-relaxed text-ink">
                   {messagePreview || 'Pick a patient and date to preview the message.'}
                 </p>
@@ -735,7 +736,7 @@ export default function Doctor() {
               type="button"
               onClick={handleApprove}
               disabled={!canApprove}
-              className={`w-full rounded-full bg-accent py-5 text-lg font-semibold text-white ${stampSeconds != null ? '!opacity-100' : ''} shadow-[0_20px_40px_-15px_oklch(0.57_0.2_30/0.8)] transition-all enabled:hover:-translate-y-0.5 enabled:active:scale-[0.98] disabled:opacity-30 disabled:shadow-none`}
+              className={`w-full rounded-full bg-accent py-5 text-lg font-semibold text-white ${stampSeconds != null ? '!opacity-100' : ''} elev-accent transition-all enabled:hover:-translate-y-0.5 enabled:active:scale-[0.98] disabled:opacity-30 disabled:shadow-none`}
             >
               {approving ? (
                 'Saving…'

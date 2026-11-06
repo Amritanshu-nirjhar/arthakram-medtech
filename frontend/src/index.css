@@ -14,8 +14,8 @@
   --color-ink: oklch(0.22 0.035 265);
   --color-ink-soft: oklch(0.47 0.03 265);
   --color-line: oklch(0.88 0.02 80);
-  --color-accent: oklch(0.57 0.2 30);
-  --color-accent-dark: oklch(0.47 0.17 30);
+  --color-accent: oklch(0.53 0.2 30); /* white text on it >= 4.5:1 */
+  --color-accent-dark: oklch(0.45 0.17 30);
   --color-accent-soft: oklch(0.93 0.045 40);
   --color-lime: oklch(0.92 0.16 100);
   --color-warn: oklch(0.55 0.14 60);
@@ -59,8 +59,8 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(to bottom, transparent 0 39px, oklch(0.55 0.08 250 / 0.07) 39px 40px);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E");
+  z-index: 2; /* grain sits over the pages so every sheet shares the same paper texture */
 }
 body::after {
   content: "";
@@ -82,6 +82,72 @@ body::after {
 #root {
   position: relative;
   z-index: 1;
+}
+
+/* ---------- notebook paper (site-wide) ----------
+   --nb-gutter: left binding width; content is pushed right of it on >=640px. */
+:root {
+  --nb-gutter: 0px;
+  --nb-rule: oklch(0.55 0.08 250 / 0.13);
+  --nb-margin: oklch(0.6 0.16 25 / 0.32);
+}
+.nb-paper,
+body {
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(var(--nb-gutter) + 22px),
+      var(--nb-margin) calc(var(--nb-gutter) + 22px) calc(var(--nb-gutter) + 23.5px),
+      transparent calc(var(--nb-gutter) + 23.5px) calc(var(--nb-gutter) + 27px),
+      var(--nb-margin) calc(var(--nb-gutter) + 27px) calc(var(--nb-gutter) + 28.5px),
+      transparent calc(var(--nb-gutter) + 28.5px)
+    ),
+    repeating-linear-gradient(to bottom, transparent 0 39px, var(--nb-rule) 39px 40px);
+}
+@media (min-width: 640px) {
+  :root {
+    --nb-gutter: 56px;
+  }
+  #root {
+    padding-left: var(--nb-gutter);
+  }
+  /* binding strip: punched holes + a page-edge shadow, scrolls with the page */
+  #root::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--nb-gutter);
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 50%, oklch(0.78 0.02 80) 0 7px, oklch(0.68 0.025 80) 7px 8.5px, oklch(0.93 0.015 85) 8.5px 10px, transparent 10.5px) 0 0 / 100% 88px repeat-y,
+      linear-gradient(to right, oklch(0.94 0.018 85), oklch(0.955 0.018 85));
+    box-shadow: inset -10px 0 14px -12px oklch(0.22 0.035 265 / 0.25);
+    z-index: 3;
+  }
+}
+@media (max-width: 639px) {
+  /* phones: keep the ruled lines, drop the margin so nothing collides with text */
+  :root {
+    --nb-margin: transparent;
+  }
+}
+
+/* masking-tape strip on a few key cards (parent must be position:relative, not overflow:hidden) */
+.tape::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 96px;
+  height: 26px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: oklch(0.93 0.06 95 / 0.75);
+  box-shadow: 0 1px 2px oklch(0.22 0.035 265 / 0.12);
+  border-left: 2px dashed oklch(0.99 0 0 / 0.5);
+  border-right: 2px dashed oklch(0.99 0 0 / 0.5);
+  z-index: 5;
+  pointer-events: none;
 }
 
 .display {
@@ -108,12 +174,6 @@ body::after {
   font-weight: 600;
   letter-spacing: 0;
 }
-/* yellow highlighter swipe behind a word */
-.highlight {
-  background: linear-gradient(transparent 55%, var(--color-lime) 55% 92%, transparent 92%);
-  padding: 0 0.1em;
-}
-
 /* ---------- scroll progress (native scroll timeline, no JS) ---------- */
 .scroll-progress {
   position: fixed;
@@ -240,13 +300,13 @@ body::after {
 /* mic + waves */
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 oklch(0.57 0.2 30 / 0.4);
+    box-shadow: 0 0 0 0 oklch(0.53 0.2 30 / 0.4);
   }
   70% {
-    box-shadow: 0 0 0 28px oklch(0.57 0.2 30 / 0);
+    box-shadow: 0 0 0 28px oklch(0.53 0.2 30 / 0);
   }
   100% {
-    box-shadow: 0 0 0 0 oklch(0.57 0.2 30 / 0);
+    box-shadow: 0 0 0 0 oklch(0.53 0.2 30 / 0);
   }
 }
 .mic-listening {
@@ -563,4 +623,211 @@ body::after {
   ::view-transition-new(root) {
     animation: none;
   }
+}
+
+/* ---------- landing: sections are notebook pages that stack and turn ----------
+   Each .nb-page sticks once its bottom reaches the viewport bottom (top = 100vh - its height, set as --h by JS),
+   so the next page slides up over it. JS sets --cover (0..1, how much the next page covers this one)
+   and the tilt transform; the darkening overlay reads --cover. */
+.nb-page {
+  position: sticky;
+  top: min(0px, calc(100vh - var(--h, 100vh)));
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -24px 40px -28px oklch(0.22 0.035 265 / 0.35);
+  transform-origin: 50% calc(100% - 50vh);
+}
+.nb-page.nb-paper {
+  --nb-gutter: 0px; /* sheets already sit right of the binding */
+  background-position: 0 0, 0 18px;
+}
+.nb-page.nb-first {
+  border-radius: 0;
+  box-shadow: none;
+}
+.nb-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-ink);
+  opacity: calc(var(--cover, 0) * 0.4);
+  pointer-events: none;
+  z-index: 30;
+}
+.nb-page-num {
+  position: absolute;
+  left: 2.75rem;
+  top: 1.25rem;
+  font-family: var(--font-hand);
+  font-size: 1.35rem;
+  color: var(--color-ink-soft);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* side page counter, desktop only */
+.nb-counter {
+  position: fixed;
+  right: 22px;
+  top: 50%;
+  z-index: 45;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: oklch(0.99 0.008 85 / 0.85);
+  backdrop-filter: blur(6px);
+  font-family: var(--font-hand);
+  color: var(--color-ink-soft);
+}
+@media (min-width: 1024px) {
+  .nb-counter {
+    display: flex;
+  }
+}
+.nb-counter-track {
+  position: relative;
+  width: 2px;
+  height: 120px;
+  border-radius: 2px;
+  background: var(--color-line);
+  overflow: hidden;
+}
+.nb-counter-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  transform-origin: 50% 0;
+  transform: scaleY(var(--nb-progress, 0));
+}
+
+/* headings write themselves in, left to right */
+.write {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 1200ms var(--ease-out-expo) 120ms;
+}
+.write.in,
+.in .write {
+  clip-path: inset(0 0 0 0);
+}
+
+/* highlighter swipe draws across as the word enters (transform only) */
+.highlight {
+  position: relative;
+  z-index: 0;
+}
+.highlight::before {
+  content: "";
+  position: absolute;
+  inset: 52% -0.08em 6% -0.08em;
+  z-index: -1;
+  background: var(--color-lime);
+  border-radius: 3px 6px 4px 7px;
+  transform: scaleX(0) skewX(-8deg);
+  transform-origin: 0 50%;
+  transition: transform 900ms var(--ease-out-expo) 450ms;
+}
+.in .highlight::before,
+.highlight.in::before {
+  transform: scaleX(1) skewX(-8deg);
+}
+
+/* app screens: notebook page tab above each page title */
+.nb-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: 6px 14px 6px 6px;
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  box-shadow: 0 2px 0 var(--color-line);
+  transform: rotate(-1.5deg);
+}
+.nb-tab::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+/* list rows and cards rise in as they scroll into view (native scroll timeline; mount animation elsewhere) */
+@supports (animation-timeline: view()) {
+  .scroll-rise {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 80%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .write {
+    clip-path: none;
+  }
+  .highlight::before {
+    transform: skewX(-8deg);
+  }
+  .nb-page {
+    transform: none !important;
+  }
+}
+
+/* ---------- design tokens: one type scale, one elevation system, one set of control states ---------- */
+.label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+.h2-size {
+  font-size: clamp(2.6rem, 6vw, 5rem);
+}
+.elev-1 {
+  box-shadow:
+    0 1px 0 oklch(0.22 0.035 265 / 0.05),
+    0 24px 48px -32px oklch(0.22 0.035 265 / 0.45);
+}
+.elev-2 {
+  box-shadow:
+    0 1px 0 oklch(0.22 0.035 265 / 0.05),
+    0 40px 80px -36px oklch(0.22 0.035 265 / 0.55);
+}
+.elev-accent {
+  box-shadow: 0 18px 36px -16px oklch(0.53 0.2 30 / 0.7);
+}
+button:not(:disabled),
+a[href],
+summary {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+button:not(:disabled):active,
+a[href]:active {
+  filter: brightness(0.93);
+}
+input:focus-visible,
+textarea:focus-visible {
+  outline-offset: 1px;
+}
+p {
+  text-wrap: pretty;
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }

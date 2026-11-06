@@ -19,7 +19,7 @@ export default function Toast({ show, message, action, success = true }) {
         <button
           type="button"
           onClick={action.onClick}
-          className="inline-flex items-center gap-1.5 rounded-full bg-lime px-4 py-1.5 font-semibold text-ink transition-transform active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-full bg-lime min-h-11 px-4 font-semibold text-ink transition-transform active:scale-95"
         >
           <UndoIcon className="h-4 w-4" />
           {action.label}

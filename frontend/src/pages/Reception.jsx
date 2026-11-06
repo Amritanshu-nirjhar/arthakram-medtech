@@ -160,11 +160,9 @@ export default function Reception() {
   ).length;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-20 pt-10 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">
-        Reception
-      </p>
-      <h1 className="display mt-2 text-6xl text-ink sm:text-7xl">
+    <div className="mx-auto max-w-5xl px-4 pb-20 pt-10 sm:px-6">
+      <p className="nb-tab">OPD · Reception</p>
+      <h1 className="display mt-3 text-5xl text-ink sm:text-6xl">
         The <em className="text-accent">queue</em>
       </h1>
       <p className="mt-3 text-base text-ink-soft">
@@ -186,7 +184,7 @@ export default function Reception() {
             key={f.value}
             type="button"
             onClick={() => setFilter(f.value)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors ${
               filter === f.value
                 ? "bg-ink text-white"
                 : "text-ink-soft hover:text-ink"
@@ -279,7 +277,7 @@ export default function Reception() {
                       <li
                         key={r.id}
                         style={{ "--i": idx }}
-                        className="rise relative flex flex-col gap-3 py-5 sm:flex-row sm:items-start sm:justify-between"
+                        className="rise scroll-rise relative flex flex-col gap-3 py-5 sm:flex-row sm:items-start sm:justify-between"
                       >
                         <div
                           className={`pointer-events-none absolute inset-y-2 -inset-x-3 z-10 flex items-center justify-center rounded-2xl bg-[oklch(0.62_0.15_150/0.12)] transition-opacity duration-300 motion-reduce:transition-none ${
@@ -288,7 +286,7 @@ export default function Reception() {
                           aria-hidden={flashId !== r.id}
                         >
                           <span
-                            className={`inline-flex items-center gap-2 rounded-full bg-[oklch(0.62_0.15_150)] px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform duration-500 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none ${
+                            className={`inline-flex items-center gap-2 rounded-full bg-[oklch(0.5_0.13_150)] px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform duration-500 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none ${
                               flashId === r.id ? "scale-100" : "scale-75"
                             }`}
                           >
@@ -373,7 +371,7 @@ export default function Reception() {
                                 type="button"
                                 onClick={() => handleSend(r)}
                                 disabled={action.loading}
-                                className="inline-flex items-center justify-center gap-2 rounded-full bg-[oklch(0.62_0.15_150)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+                                className="inline-flex items-center justify-center gap-2 rounded-full bg-[oklch(0.5_0.13_150)] min-h-11 px-5 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
                               >
                                 <WhatsAppIcon className="h-4 w-4" />
                                 {action.loading
@@ -389,7 +387,7 @@ export default function Reception() {
                                     handleStatusChange(r, "confirmed")
                                   }
                                   disabled={action.loading}
-                                  className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
+                                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-5 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
                                 >
                                   Mark confirmed
                                 </button>
@@ -399,7 +397,7 @@ export default function Reception() {
                                     handleStatusChange(r, "missed")
                                   }
                                   disabled={action.loading}
-                                  className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink-soft hover:border-warn disabled:opacity-50"
+                                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-5 text-sm font-medium text-ink-soft hover:border-warn disabled:opacity-50"
                                 >
                                   Mark missed
                                 </button>
@@ -413,7 +411,7 @@ export default function Reception() {
                                     handleStatusChange(r, "visited")
                                   }
                                   disabled={action.loading}
-                                  className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
+                                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-5 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
                                 >
                                   Mark visited
                                 </button>
@@ -423,7 +421,7 @@ export default function Reception() {
                                     handleStatusChange(r, "missed")
                                   }
                                   disabled={action.loading}
-                                  className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink-soft hover:border-warn disabled:opacity-50"
+                                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-5 text-sm font-medium text-ink-soft hover:border-warn disabled:opacity-50"
                                 >
                                   Mark missed
                                 </button>

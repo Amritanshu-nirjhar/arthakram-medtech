@@ -38,11 +38,8 @@ export default function NavBar() {
           scrolled ? 'border border-line bg-surface/80 shadow-sm backdrop-blur-md' : 'border border-transparent'
         }`}
       >
-        <Link to="/" viewTransition className="flex items-center gap-2 pl-2 text-ink">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-50" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" />
-          </span>
+        <Link to="/" viewTransition className="flex min-h-11 items-center gap-2 pl-2 text-ink">
+          <span className="h-2.5 w-2.5 rounded-full bg-accent" />
           <span className="hidden font-display text-xl font-extrabold tracking-[-0.04em] min-[420px]:inline">
             Follow<span className="text-accent">Up</span>
           </span>
@@ -59,7 +56,7 @@ export default function NavBar() {
               to={link.to}
               viewTransition
               className={({ isActive }) =>
-                `relative rounded-full px-3 py-2 text-sm font-medium transition-colors duration-300 sm:px-4 ${
+                `relative inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium transition-colors duration-300 sm:px-4 ${
                   isActive ? 'text-white' : 'text-ink-soft hover:text-ink'
                 }`
               }

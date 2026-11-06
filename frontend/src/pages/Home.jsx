@@ -26,20 +26,77 @@ const STEPS = [
 // Adds `.in` to every [data-reveal] element once it scrolls into view.
 function useRevealAll() {
   useEffect(() => {
-    const els = document.querySelectorAll('[data-reveal]')
+    // A fully clipped .write heading never "intersects", so it is triggered by its parent instead.
+    const targets = new Map()
+    document.querySelectorAll('[data-reveal]').forEach((el) => {
+      const t = el.classList.contains('write') ? el.parentElement : el
+      targets.set(t, [...(targets.get(t) || []), el])
+    })
     const io = new IntersectionObserver(
       (entries) =>
         entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in')
-            io.unobserve(e.target)
-          }
+          if (!e.isIntersecting) return
+          ;(targets.get(e.target) || []).forEach((el) => el.classList.add('in'))
+          io.unobserve(e.target)
         }),
-      { threshold: 0.2 },
+      { rootMargin: '0px 0px -20% 0px' },
     )
-    els.forEach((el) => io.observe(el))
+    targets.forEach((_, t) => io.observe(t))
     return () => io.disconnect()
   }, [])
+}
+
+// Landing sections are .nb-page sheets: each sticks when its bottom reaches the viewport bottom,
+// and while the next sheet slides over it, it tilts back, shrinks and darkens (--cover 0..1).
+function useNotebookPages(counterRef) {
+  useEffect(() => {
+    const pages = [...document.querySelectorAll('.nb-page')]
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const ro = new ResizeObserver(() => pages.forEach((p) => p.style.setProperty('--h', `${p.offsetHeight}px`)))
+    pages.forEach((p) => ro.observe(p))
+    let raf = 0
+    const update = () => {
+      raf = 0
+      const vh = window.innerHeight
+      let current = 0
+      pages.forEach((p, i) => {
+        const next = pages[i + 1]
+        const cover = next ? Math.min(Math.max((vh - next.getBoundingClientRect().top) / vh, 0), 1) : 0
+        p.style.setProperty('--cover', cover.toFixed(3))
+        p.style.transform =
+          cover > 0 && !reduce
+            ? `perspective(1600px) rotateX(${(cover * 8).toFixed(2)}deg) scale(${(1 - cover * 0.06).toFixed(4)})`
+            : ''
+        if (p.getBoundingClientRect().top < vh * 0.5) current = i
+      })
+      const c = counterRef.current
+      if (c) {
+        c.querySelector('[data-n]').textContent = current + 1
+        const max = document.documentElement.scrollHeight - vh
+        c.style.setProperty('--nb-progress', max > 0 ? (window.scrollY / max).toFixed(3) : 0)
+      }
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      ro.disconnect()
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [counterRef])
+}
+
+function PageNum({ n }) {
+  return (
+    <span className="nb-page-num" aria-hidden>
+      p. {n}
+    </span>
+  )
 }
 
 export function CountUp({ to, prefix = '', duration = 1400 }) {
@@ -91,7 +148,7 @@ function Wave({ className = '' }) {
 function Phone({ step, className = '' }) {
   return (
     <div className={`mx-auto w-full max-w-[300px] ${className}`}>
-      <div className="rounded-[2.6rem] bg-ink p-2.5 shadow-[0_40px_80px_-30px_oklch(0.22_0.035_265/0.5)]">
+      <div className="rounded-[2.6rem] bg-ink p-2.5 elev-2">
         <div className="relative h-[540px] overflow-hidden rounded-[2.1rem] bg-surface">
           <div className="absolute left-1/2 top-2.5 h-5 w-20 -translate-x-1/2 rounded-full bg-ink" />
           <div className="flex items-center justify-between px-6 pt-11 text-[11px] font-medium text-ink-soft">
@@ -114,7 +171,7 @@ function Phone({ step, className = '' }) {
                   <div className="mic-listening flex h-24 w-24 items-center justify-center rounded-full bg-accent text-white">
                     <Wave />
                   </div>
-                  <p className="mt-8 text-xs uppercase tracking-[0.2em] text-ink-soft">Listening</p>
+                  <p className="mt-8 label text-ink-soft">Listening</p>
                   <p className="caret hand mt-3 text-[1.7rem] leading-tight text-ink">
                     &ldquo;Anil Verma, BP high, started amlodipine 5mg, review in 10 days&rdquo;
                   </p>
@@ -128,7 +185,7 @@ function Phone({ step, className = '' }) {
                     ['Visit', 'follow-up visit'],
                   ].map(([k, v], j) => (
                     <div key={k} className="rounded-2xl border border-line p-4" style={{ transitionDelay: `${j * 80}ms` }}>
-                      <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">{k}</p>
+                      <p className="label text-ink-soft">{k}</p>
                       <p className="mt-1 text-lg font-semibold text-ink">{v}</p>
                     </div>
                   ))}
@@ -178,9 +235,9 @@ function StickyStory() {
   }, [])
 
   return (
-    <section id="how" className="relative mx-auto max-w-6xl px-4 py-24 sm:px-8 md:py-40">
-      <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">How it works</p>
-      <h2 className="display mt-4 max-w-3xl text-[clamp(2.8rem,7vw,6rem)]">
+    <section id="how" className="relative mx-auto max-w-6xl px-4 py-24 sm:px-8 md:py-32">
+      <p className="label text-ink-soft">How it works</p>
+      <h2 data-reveal className="write display mt-4 max-w-3xl h2-size">
         Two taps for the doctor. <em className="text-accent">Zero</em> forms.
       </h2>
 
@@ -239,6 +296,8 @@ const NOTE_WORDS = [
 ]
 
 // Mouse-only parallax: writes --mx/--my (-1..1) on the hero; .hd-layer reads them.
+const PAGE_COUNT = 7
+
 function heroParallax(e) {
   if (e.pointerType !== 'mouse') return
   const r = e.currentTarget.getBoundingClientRect()
@@ -258,9 +317,9 @@ function HeroDemo() {
     <div className="hd-scene rise relative mx-auto h-[540px] w-full max-w-[540px] sm:h-[580px]" style={{ '--i': 4 }} aria-hidden>
       <div className="hd-stage absolute inset-0">
       {/* 1. the doctor's note */}
-      <div className="hd-layer absolute left-0 top-0 w-[88%] sm:w-[80%]" style={{ '--z': 0 }}>
+      <div className="hd-layer tape absolute left-0 top-0 w-[88%] sm:w-[80%]" style={{ '--z': 0 }}>
         <div
-          className="hd-float relative rotate-[-4deg] overflow-hidden rounded-[1.5rem] border border-line bg-surface px-6 pb-12 pt-5 shadow-[0_30px_60px_-30px_oklch(0.22_0.035_265/0.45)] sm:pl-14"
+          className="hd-float relative rotate-[-4deg] overflow-hidden rounded-3xl border border-line bg-surface px-6 pb-12 pt-5 elev-2 sm:pl-14"
           style={{
             backgroundImage:
               'repeating-linear-gradient(to bottom, transparent 0 33px, oklch(0.55 0.08 250 / 0.12) 33px 34px)',
@@ -268,7 +327,7 @@ function HeroDemo() {
           }}
         >
           <span className="absolute bottom-0 left-9 top-0 hidden w-px bg-accent/35 sm:block" />
-          <div className="flex items-baseline justify-between text-[11px] uppercase tracking-[0.18em] text-ink-soft">
+          <div className="flex items-baseline justify-between label text-ink-soft">
             <span>
               <span className="font-display text-lg font-extrabold normal-case tracking-tight text-accent">Rx</span>{' '}
               Dr. Sharma · OPD
@@ -303,7 +362,7 @@ function HeroDemo() {
         ].map(([k, v], i) => (
           <div
             key={k}
-            className="hd-chip flex items-center gap-2.5 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-4 shadow-[0_14px_30px_-16px_oklch(0.22_0.035_265/0.5)]"
+            className="hd-chip flex items-center gap-2.5 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-4 elev-1"
             style={{ '--c': i, rotate: `${[2, -1.5, 1][i]}deg` }}
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-lime text-ink">
@@ -311,7 +370,7 @@ function HeroDemo() {
                 <path d="M3 8.5 6.5 12 13 4.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
-            <span className="text-[10px] uppercase tracking-[0.16em] text-ink-soft">{k}</span>
+            <span className="label text-ink-soft">{k}</span>
             <span className="text-sm font-semibold text-ink">{v}</span>
           </div>
         ))}
@@ -321,7 +380,7 @@ function HeroDemo() {
       {/* 3. what the patient actually receives */}
       <div className="hd-layer absolute bottom-0 left-[4%] w-[90%] sm:w-[78%]" style={{ '--z': 70 }}>
         <div className="hd-float" style={{ '--f': 2 }}>
-        <div className="hd-msg rotate-[2deg] rounded-[1.75rem] border border-line bg-surface p-4 shadow-[0_40px_80px_-30px_oklch(0.22_0.035_265/0.55)]">
+        <div className="hd-msg rotate-[2deg] rounded-3xl border border-line bg-surface p-4 elev-2">
           <div className="flex items-center gap-3 border-b border-line pb-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[oklch(0.72_0.17_150)] text-xs font-bold text-white">
               SF
@@ -385,10 +444,10 @@ function Pricing() {
     <section id="pricing" className="mx-auto max-w-6xl px-4 py-24 sm:px-8 md:py-32">
       <div className="grid items-center gap-12 md:grid-cols-12">
         <div className="md:col-span-5">
-          <p data-reveal className="text-xs uppercase tracking-[0.25em] text-ink-soft">
+          <p data-reveal className="label text-ink-soft">
             Pricing
           </p>
-          <h2 data-reveal className="display mt-4 text-[clamp(2.8rem,6vw,5rem)] text-ink">
+          <h2 data-reveal className="write display mt-4 h2-size text-ink">
             One price. <em>That&rsquo;s it.</em>
           </h2>
           <p data-reveal style={{ '--i': 1 }} className="mt-6 max-w-sm text-lg leading-relaxed text-ink-soft">
@@ -397,8 +456,8 @@ function Pricing() {
           </p>
         </div>
 
-        <div data-reveal style={{ '--i': 2 }} className="md:col-span-7">
-          <div className="relative overflow-hidden rounded-[2rem] bg-ink p-8 text-white shadow-[0_40px_80px_-40px_oklch(0.22_0.035_265/0.7)] sm:p-10">
+        <div data-reveal style={{ '--i': 2 }} className="tape relative md:col-span-7">
+          <div className="relative overflow-hidden rounded-3xl bg-ink p-8 text-white elev-2 sm:p-10">
             <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/25 blur-3xl" />
             <span
               className="absolute right-6 top-8 rotate-[8deg] rounded-md border-2 border-lime px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lime sm:right-10"
@@ -406,7 +465,7 @@ function Pricing() {
             >
               1 week free
             </span>
-            <p className="relative text-xs uppercase tracking-[0.2em] text-white/50">Per clinic</p>
+            <p className="relative label text-white/50">Per clinic</p>
             <p className="relative mt-3 flex items-baseline gap-2">
               <span className="display text-[clamp(4rem,10vw,6.5rem)] text-lime">₹999</span>
               <span className="text-lg text-white/60">/ month</span>
@@ -441,10 +500,10 @@ function Faq() {
     <section id="faq" className="mx-auto max-w-6xl px-4 pb-24 sm:px-8 md:pb-32">
       <div className="grid gap-10 md:grid-cols-12">
         <div className="md:col-span-4">
-          <p data-reveal className="text-xs uppercase tracking-[0.25em] text-ink-soft">
+          <p data-reveal className="label text-ink-soft">
             Questions
           </p>
-          <h2 data-reveal className="display mt-4 text-[clamp(2.6rem,5vw,4.2rem)] text-ink">
+          <h2 data-reveal className="write display mt-4 h2-size text-ink">
             Asked <em>often.</em>
           </h2>
           <p data-reveal className="mt-6 flex items-center gap-2 text-ink-soft">
@@ -487,11 +546,11 @@ function Footer() {
           </p>
         </div>
         <nav className="md:col-span-3" aria-label="Footer">
-          <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">Screens</p>
+          <p className="label text-ink-soft">Screens</p>
           <ul className="mt-4 space-y-2">
             {links.map(([to, label]) => (
               <li key={to}>
-                <Link viewTransition to={to} className="group inline-flex items-center gap-2 text-lg font-medium text-ink hover:text-accent">
+                <Link viewTransition to={to} className="group inline-flex min-h-11 items-center gap-2 text-lg font-medium text-ink hover:text-accent">
                   {label}
                   <ArrowRightIcon className="h-4 w-4 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
                 </Link>
@@ -500,7 +559,7 @@ function Footer() {
           </ul>
         </nav>
         <div className="md:col-span-3">
-          <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">Promise</p>
+          <p className="label text-ink-soft">Promise</p>
           <p className="mt-4 text-ink-soft">All patient data is fictional. No medical advice is ever sent.</p>
         </div>
       </div>
@@ -518,6 +577,8 @@ function Footer() {
 export default function Home() {
   useRevealAll()
   const heroRef = useRef(null)
+  const counterRef = useRef(null)
+  useNotebookPages(counterRef)
   useEffect(() => {
     const el = heroRef.current
     const scene = el.querySelector('.hd-scene')
@@ -541,9 +602,18 @@ export default function Home() {
 
   return (
     <div className="overflow-x-clip">
-      <div className="scroll-progress" aria-hidden />
+      <div ref={counterRef} className="nb-counter" aria-hidden>
+        <span className="text-2xl leading-none text-ink">
+          p. <span data-n>1</span>
+        </span>
+        <span className="nb-counter-track">
+          <span className="nb-counter-fill" />
+        </span>
+        <span className="text-lg leading-none">/ {PAGE_COUNT}</span>
+      </div>
 
       {/* HERO */}
+      <div className="nb-page nb-paper nb-first">
       <section
         ref={heroRef}
         onPointerMove={heroParallax}
@@ -578,7 +648,7 @@ export default function Home() {
           <div className="rise mt-9 flex flex-wrap gap-3" style={{ '--i': 8 }}>
             <Link viewTransition
               to="/doctor"
-              className="group inline-flex items-center gap-3 rounded-full bg-ink px-7 py-4 text-base font-medium text-white shadow-[0_18px_40px_-18px_oklch(0.22_0.035_265/0.8)] transition-transform duration-200 hover:-translate-y-0.5"
+              className="group inline-flex items-center gap-3 rounded-full bg-ink px-7 py-4 text-base font-medium text-white elev-1 transition-transform duration-200 hover:-translate-y-0.5"
             >
               <span className="h-2 w-2 rounded-full bg-accent transition-transform group-hover:scale-150" />
               Try the doctor screen
@@ -607,8 +677,11 @@ export default function Home() {
 
         <HeroDemo />
       </section>
+      </div>
 
-      {/* MARQUEE of real test notes */}
+      {/* MARQUEE + PROBLEM */}
+      <div className="nb-page nb-paper">
+      <PageNum n={2} />
       <section className="border-y border-line bg-surface py-6" aria-label="Example notes">
         <div className="overflow-hidden">
           <div className="marquee gap-10 pr-10">
@@ -623,13 +696,13 @@ export default function Home() {
       </section>
 
       {/* PROBLEM */}
-      <section className="mx-auto max-w-6xl px-4 py-24 sm:px-8 md:py-40">
+      <section className="mx-auto max-w-6xl px-4 py-24 sm:px-8 md:py-32">
         <div className="grid gap-12 md:grid-cols-12">
-          <p data-reveal className="text-xs uppercase tracking-[0.25em] text-ink-soft md:col-span-3">
+          <p data-reveal className="label text-ink-soft md:col-span-3">
             The problem
           </p>
           <div className="md:col-span-9">
-            <p data-reveal className="display text-[clamp(2.4rem,5.5vw,4.8rem)] text-ink">
+            <p data-reveal className="write display h2-size text-ink">
               Notes live on paper. <span className="highlight">Three in ten</span> follow-ups never come back.
             </p>
             <p data-reveal style={{ '--i': 1 }} className="mt-8 max-w-xl text-lg leading-relaxed text-ink-soft">
@@ -639,22 +712,29 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </div>
 
-      <StickyStory />
+      <div className="nb-page nb-paper">
+        <PageNum n={3} />
+        <StickyStory />
+      </div>
 
       {/* SAFETY */}
-      <section className="bg-ink py-24 text-white md:py-40">
+      <section className="nb-page bg-ink py-24 text-white md:py-32">
+        <span className="nb-page-num !text-white/50" aria-hidden>
+          p. 4
+        </span>
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
-          <p data-reveal className="text-xs uppercase tracking-[0.25em] text-white/50">
+          <p data-reveal className="label text-white/50">
             Safety, by design
           </p>
-          <h2 data-reveal className="display mt-4 max-w-4xl text-[clamp(2.8rem,7vw,6rem)]">
+          <h2 data-reveal className="write display mt-4 max-w-4xl h2-size">
             The AI never writes to your patient.
           </h2>
 
           <div className="mt-16 grid gap-6 md:grid-cols-2">
             <div data-reveal className="rounded-3xl border border-white/15 p-7">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/50">What the doctor said</p>
+              <p className="label text-white/50">What the doctor said</p>
               <p className="hand mt-4 text-4xl leading-snug">
                 Anil Verma, <span className="strike">BP high</span>, started{' '}
                 <span className="strike" style={{ '--i': 1 }}>
@@ -667,7 +747,7 @@ export default function Home() {
               </p>
             </div>
             <div data-reveal style={{ '--i': 2 }} className="rounded-3xl bg-lime p-7 text-ink">
-              <p className="text-xs uppercase tracking-[0.2em] text-ink/60">What the patient gets</p>
+              <p className="label text-ink/60">What the patient gets</p>
               <p className="mt-4 text-lg leading-relaxed">{DEMO_MESSAGE}</p>
             </div>
           </div>
@@ -689,8 +769,10 @@ export default function Home() {
       </section>
 
       {/* NUMBERS */}
-      <section className="mx-auto max-w-6xl px-4 py-24 sm:px-8 md:py-40">
-        <p data-reveal className="text-xs uppercase tracking-[0.25em] text-ink-soft">
+      <div className="nb-page nb-paper">
+      <PageNum n={5} />
+      <section className="mx-auto max-w-6xl px-4 py-24 sm:px-8 md:py-32">
+        <p data-reveal className="label text-ink-soft">
           One clinic, one month
         </p>
         <div className="mt-10 divide-y divide-line border-y border-line">
@@ -717,18 +799,24 @@ export default function Home() {
           ))}
         </div>
       </section>
+      </div>
 
-      <Pricing />
-      <Faq />
+      <div className="nb-page nb-paper">
+        <PageNum n={6} />
+        <Pricing />
+        <Faq />
+      </div>
 
       {/* CTA */}
+      <div className="nb-page nb-paper pt-16">
+      <PageNum n={7} />
       <section className="relative overflow-hidden px-4 pb-24 sm:px-8">
         <div
           data-reveal
-          className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-ink px-8 py-20 text-white md:px-16 md:py-28"
+          className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-ink px-8 py-20 text-white md:px-16 md:py-28"
         >
           <div className="drift pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full border-[40px] border-accent/40" />
-          <h2 className="display relative max-w-3xl text-[clamp(3rem,8vw,7rem)]">Next patient?</h2>
+          <h2 className="display relative max-w-3xl h2-size">Next patient?</h2>
           <div className="relative mt-10 flex flex-wrap gap-3">
             <Link viewTransition
               to="/doctor"
@@ -753,6 +841,7 @@ export default function Home() {
       </section>
 
       <Footer />
+      </div>
     </div>
   )
 }

@@ -112,8 +112,8 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 pb-20 pt-10 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.25em] text-ink-soft">Dashboard</p>
-      <h1 className="display mt-2 text-6xl text-ink sm:text-7xl">
+      <p className="nb-tab">Clinic · Dashboard</p>
+      <h1 className="display mt-3 text-5xl text-ink sm:text-6xl">
         How it&rsquo;s <em className="text-accent">going</em>
       </h1>
       <p className="mt-3 text-base text-ink-soft">
@@ -122,13 +122,18 @@ export default function Dashboard() {
 
       <div className="mt-8">
         {loading && (
-          <div className="rounded-xl border border-line bg-surface p-6 text-center text-sm text-ink-soft">
-            Loading stats…
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5" aria-label="Loading stats">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className={`rounded-3xl border border-line bg-surface p-5 ${i === 4 ? 'col-span-2 sm:col-span-1' : ''}`}>
+                <div className="h-10 w-14 animate-pulse rounded-2xl bg-line" />
+                <div className="mt-3 h-3 w-20 animate-pulse rounded-full bg-line" />
+              </div>
+            ))}
           </div>
         )}
 
         {!loading && error && (
-          <div className="rounded-xl border border-line bg-surface p-6 text-center text-sm text-warn">
+          <div className="rounded-3xl border border-line bg-surface p-6 text-center text-sm text-warn">
             <p>{error}</p>
             <button type="button" onClick={loadStats} className="mt-2 font-medium underline">
               Try again
@@ -142,21 +147,21 @@ export default function Dashboard() {
               <div
                 key={tile.key}
                 style={{ '--i': i }}
-                className={`rise rounded-3xl border p-5 ${i === 4 ? 'col-span-2 border-transparent bg-lime sm:col-span-1' : 'border-line bg-surface'}`}
+                className={`rise scroll-rise rounded-3xl border p-5 ${i === 4 ? 'col-span-2 border-transparent bg-lime sm:col-span-1' : 'border-line bg-surface'}`}
               >
                 <p className="display text-5xl text-ink">
                   {stats[tile.key] == null ? '—' : <CountUp to={stats[tile.key]} />}
                   {tile.key === 'avg_doctor_seconds' && stats[tile.key] != null && <span className="text-3xl">s</span>}
                 </p>
-                <p className="mt-2 text-[11px] uppercase tracking-[0.15em] text-ink-soft">{tile.label}</p>
+                <p className="mt-2 label text-ink-soft">{tile.label}</p>
               </div>
             ))}
           </div>
         )}
 
         {!loading && !error && stats?.total_reminders > 0 && (
-          <div className="rise mt-4 rounded-3xl border border-line bg-surface p-5 sm:p-6" style={{ '--i': 5 }}>
-            <p className="text-[11px] uppercase tracking-[0.15em] text-ink-soft">Where every reminder is now</p>
+          <div className="rise scroll-rise mt-4 rounded-3xl border border-line bg-surface p-5 sm:p-6" style={{ '--i': 5 }}>
+            <p className="label text-ink-soft">Where every reminder is now</p>
             <div className="mt-4 flex h-4 gap-1 overflow-hidden rounded-full">
               {STATUS_SEGMENTS.filter((seg) => stats[seg.key] > 0).map((seg) => (
                 <div
@@ -179,7 +184,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="mt-10 rounded-3xl border border-line bg-surface p-6 sm:p-8">
+      <div className="scroll-rise elev-1 mt-10 rounded-3xl border border-line bg-surface p-6 sm:p-8">
         <h2 className="display text-4xl text-ink">Value calculator</h2>
         <p className="mt-1 text-sm text-ink-soft">
           Edit the numbers for this clinic — the math below updates as you type.
@@ -208,7 +213,7 @@ export default function Dashboard() {
         <button
           type="button"
           onClick={() => setInputs(DEFAULT_INPUTS)}
-          className="mt-3 text-xs text-ink-soft underline"
+          className="mt-2 inline-flex min-h-11 items-center text-sm text-ink-soft underline underline-offset-4 hover:text-ink"
         >
           Reset to defaults
         </button>
@@ -240,7 +245,7 @@ export default function Dashboard() {
           </div>
 
           <div className="rounded-3xl bg-ink p-6 text-white">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/60">
+            <p className="label text-white/60">
               ₹ recovered / month if the miss rate drops to {fmtNum(v.targetMissRate)}%
             </p>
             <p className="display mt-2 text-6xl tabular-nums text-lime sm:text-7xl">
