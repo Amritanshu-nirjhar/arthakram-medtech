@@ -13,7 +13,7 @@ from .dates import adjust_for_sunday, compute_final_date, pretty_date
 from . import stt
 from .db import create_db_and_tables, get_session
 from .extractor import extract
-from .matching import find_candidates
+from .matching import find_candidates, find_in_text
 from .models import Patient, Reminder, ReminderStatus, VisitType
 from .safety import is_extraction_safe, is_message_safe, visit_type_is_valid
 from .templates import render_message
@@ -57,7 +57,12 @@ async def transcribe_audio(audio: UploadFile = File(...), session: Session = Dep
     if len(data) > MAX_AUDIO_BYTES:
         raise HTTPException(status_code=413, detail="audio too long")
     names = session.exec(select(Patient.name)).all()
-    hint = "Clinic follow-up note. Patients: " + ", ".join(names) + ". Review after 2 weeks. 15 din baad bulao."
+    # Spelling hints: real patient names + one English and one Hinglish example sentence.
+    hint = (
+        "Clinic follow-up note in English or Hinglish. Patients: "
+        + ", ".join(names)
+        + ". Ramesh Kumar review after 2 weeks. Kavita ko 15 din baad bulao."
+    )
     try:
         text = await run_in_threadpool(stt.transcribe, data, hint)
     except Exception:
@@ -164,10 +169,13 @@ def parse_note(note: NoteIn, session: Session = Depends(get_session)):
 
     all_patients = session.exec(select(Patient)).all()
     candidates = find_candidates(patient_name, all_patients) if patient_name else []
+    if not candidates:
+        # Name not at the start / lowercase from speech-to-text: look for any known patient in the note.
+        candidates = find_in_text(note.text, all_patients)
 
     if not candidates:
         warnings.append(
-            "no matching patient found" if patient_name else "no patient name detected in note"
+            "no matching patient found - search below" if patient_name else "no patient name detected in note"
         )
     elif len(candidates) > 1:
         warnings.append("multiple matching patients found - choose one")

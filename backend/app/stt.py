@@ -9,7 +9,9 @@ import tempfile
 import threading
 from functools import lru_cache
 
-MODEL_SIZE = os.getenv("WHISPER_MODEL", "base")
+# "small" handles Indian accents and Hinglish well (~1 s per note on a laptop CPU, ~480 MB once).
+# Set WHISPER_MODEL=base on a slow machine.
+MODEL_SIZE = os.getenv("WHISPER_MODEL", "small")
 
 
 def available() -> bool:

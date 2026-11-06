@@ -23,7 +23,7 @@ The AI only ever extracts three structured fields. It never writes the patient-f
 ./dev.sh --phone    # also serves https://<laptop-ip>:5174 so the mic works on a phone
 ```
 
-Voice is transcribed on our own backend with faster-whisper (runs locally, no API key; the model downloads once, about 150 MB, on first start). If it is not installed, the app falls back to the browser's speech recognition.
+Voice is transcribed on our own backend with faster-whisper (runs locally, no API key; the "small" model downloads once, about 480 MB, on first start; set WHISPER_MODEL=base for a faster, smaller one). If it is not installed, the app falls back to the browser's speech recognition.
 
 ## Setup
 
