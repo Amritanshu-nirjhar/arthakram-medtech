@@ -117,8 +117,13 @@ export default function Dashboard() {
 
       <div className="mt-5">
         {loading && (
-          <div className="rounded-xl border border-line bg-surface p-6 text-center text-sm text-ink-soft">
-            Loading stats…
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5" aria-busy="true" aria-label="Loading stats">
+            {STAT_TILES.map((tile) => (
+              <div key={tile.key} className="animate-pulse rounded-xl border border-line bg-surface p-4">
+                <div className="h-7 w-14 rounded bg-bg" />
+                <div className="mt-2 h-3 w-16 rounded bg-bg" />
+              </div>
+            ))}
           </div>
         )}
 
@@ -132,14 +137,21 @@ export default function Dashboard() {
         )}
 
         {!loading && !error && stats && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {STAT_TILES.map((tile) => (
-              <div key={tile.key} className="rounded-xl border border-line bg-surface p-4">
-                <p className="text-2xl font-semibold tabular-nums text-ink">{tile.format(stats[tile.key])}</p>
-                <p className="mt-1 text-xs text-ink-soft">{tile.label}</p>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {STAT_TILES.map((tile) => (
+                <div key={tile.key} className="rounded-xl border border-line bg-surface p-4">
+                  <p className="text-2xl font-semibold tabular-nums text-ink">{tile.format(stats[tile.key])}</p>
+                  <p className="mt-1 text-xs text-ink-soft">{tile.label}</p>
+                </div>
+              ))}
+            </div>
+            {!stats.total_reminders && (
+              <p className="mt-3 text-sm text-ink-soft">
+                No reminders yet — approve one from the Doctor screen and it will show up here.
+              </p>
+            )}
+          </>
         )}
       </div>
 

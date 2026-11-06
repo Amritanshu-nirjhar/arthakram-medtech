@@ -3,13 +3,13 @@ import {
   DATE_CHIP_OPTIONS,
   VISIT_LABELS,
   approveReminder,
-  buildMessagePreview,
-  firstNameOf,
   parseNote,
+  previewMessage,
   prettyDate,
   resolveFollowUpDate,
   searchPatients,
 } from '../api.js'
+import Spinner from '../components/Spinner.jsx'
 import Toast from '../components/Toast.jsx'
 
 function getSpeechRecognitionClass() {
@@ -48,6 +48,13 @@ export default function Doctor() {
   const [selectedPatientId, setSelectedPatientId] = useState(null)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedVisitType, setSelectedVisitType] = useState(null)
+
+  // Message text shown in the preview card. Always came from the server —
+  // either /notes/parse's message_preview or, once the doctor resolves an
+  // ambiguous patient / missing date, a fresh call to /messages/preview.
+  const [previewText, setPreviewText] = useState(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewNote, setPreviewNote] = useState(null)
 
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -162,6 +169,8 @@ export default function Doctor() {
         setSelectedPatientId(data.candidates?.length === 1 ? data.candidates[0].id : null)
         setSelectedDate(data.follow_up_date || null)
         setSelectedVisitType(data.visit_type || null)
+        setPreviewText(data.message_preview || null)
+        setPreviewNote(null)
         setStatus('ready')
       }
     } catch (err) {
@@ -191,12 +200,42 @@ export default function Doctor() {
     }, 300)
   }
 
+  // Fetches the server-rendered message for a given (patient, date, visit
+  // type) combo once the doctor resolves an ambiguity or missing date. Never
+  // blocks Approve: a failure here only shows a quiet inline note, because
+  // the server renders the real message on save regardless.
+  async function refreshPreview(patientId, dateISO, visitType) {
+    if (!patientId || !dateISO || !visitType) return
+    setPreviewLoading(true)
+    setPreviewNote(null)
+    try {
+      const data = await previewMessage({ patient_id: patientId, follow_up_date: dateISO, visit_type: visitType })
+      setPreviewText(data.message || null)
+    } catch {
+      setPreviewNote('Preview unavailable right now — the message will still be correct when you approve.')
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  function selectPatientChip(patientId) {
+    setSelectedPatientId(patientId)
+    refreshPreview(patientId, selectedDate, selectedVisitType)
+  }
+
+  function selectDateChip(days) {
+    const dateISO = resolveFollowUpDate(days)
+    setSelectedDate(dateISO)
+    refreshPreview(selectedPatientId, dateISO, selectedVisitType)
+  }
+
   function pickSearchedPatient(patient) {
     setCandidates((prev) => [patient, ...prev.filter((p) => p.id !== patient.id)])
     setSelectedPatientId(patient.id)
     setShowSearch(false)
     setSearchQuery('')
     setSearchResults([])
+    refreshPreview(patient.id, selectedDate, selectedVisitType)
   }
 
   function resetAll() {
@@ -210,6 +249,9 @@ export default function Doctor() {
     setSelectedPatientId(null)
     setSelectedDate(null)
     setSelectedVisitType(null)
+    setPreviewText(null)
+    setPreviewLoading(false)
+    setPreviewNote(null)
     setParseError(null)
     setApproveError(null)
     setSpeechError(null)
@@ -223,15 +265,6 @@ export default function Doctor() {
     () => candidates.find((c) => c.id === selectedPatientId) || null,
     [candidates, selectedPatientId],
   )
-
-  const messagePreview = useMemo(() => {
-    if (!selectedPatient || !selectedDate || !selectedVisitType) return null
-    return buildMessagePreview({
-      firstName: firstNameOf(selectedPatient.name),
-      dateISO: selectedDate,
-      visitType: selectedVisitType,
-    })
-  }, [selectedPatient, selectedDate, selectedVisitType])
 
   const canApprove = status === 'ready' && !!selectedPatient && !!selectedDate && !!selectedVisitType && !approving
 
@@ -314,7 +347,12 @@ export default function Doctor() {
         </div>
 
         <div className="space-y-4 pt-4">
-          {status === 'parsing' && <p className="text-center text-sm text-ink-soft">Reading the note…</p>}
+          {status === 'parsing' && (
+            <div className="flex items-center justify-center gap-2 py-2 text-sm text-ink-soft" aria-live="polite">
+              <Spinner className="h-4 w-4" />
+              <span>Reading the note…</span>
+            </div>
+          )}
 
           {status === 'error' && (
             <div className="rounded-lg border border-warn-soft bg-warn-soft p-4 text-sm text-warn">
@@ -358,7 +396,7 @@ export default function Doctor() {
                       <button
                         key={c.id}
                         type="button"
-                        onClick={() => setSelectedPatientId(c.id)}
+                        onClick={() => selectPatientChip(c.id)}
                         className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                           selectedPatientId === c.id
                             ? 'border-accent bg-accent text-white'
@@ -402,8 +440,27 @@ export default function Doctor() {
                       placeholder="Search patient by name"
                       className="w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-accent focus:outline-none"
                     />
-                    {searchLoading && <p className="mt-1 text-xs text-ink-soft">Searching…</p>}
-                    {searchError && <p className="mt-1 text-xs text-warn">{searchError}</p>}
+                    {searchLoading && (
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-soft">
+                        <Spinner className="h-3 w-3" />
+                        <span>Searching…</span>
+                      </div>
+                    )}
+                    {!searchLoading && searchError && (
+                      <div className="mt-1 text-xs text-warn">
+                        <p>{searchError}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleSearchChange(searchQuery)}
+                          className="font-medium underline"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    )}
+                    {!searchLoading && !searchError && searchQuery.trim() && searchResults.length === 0 && (
+                      <p className="mt-1 text-xs text-ink-soft">No patients match &ldquo;{searchQuery.trim()}&rdquo;.</p>
+                    )}
                     {searchResults.length > 0 && (
                       <ul className="mt-1 divide-y divide-line overflow-hidden rounded-lg border border-line">
                         {searchResults.map((p) => (
@@ -433,7 +490,7 @@ export default function Doctor() {
                       <button
                         key={opt.label}
                         type="button"
-                        onClick={() => setSelectedDate(resolveFollowUpDate(opt.days))}
+                        onClick={() => selectDateChip(opt.days)}
                         className="rounded-full border border-line px-3.5 py-1.5 text-sm font-medium text-ink hover:border-accent"
                       >
                         {opt.label}
@@ -450,9 +507,17 @@ export default function Doctor() {
 
               <div>
                 <p className="text-xs text-ink-soft">Message preview</p>
-                <p className="mt-1 rounded-lg bg-bg p-3 text-sm leading-relaxed text-ink">
-                  {messagePreview || 'Pick a patient and date to preview the message.'}
-                </p>
+                {previewLoading ? (
+                  <div className="mt-1 flex items-center gap-2 rounded-lg bg-bg p-3 text-sm text-ink-soft">
+                    <Spinner className="h-4 w-4" />
+                    <span>Updating preview…</span>
+                  </div>
+                ) : (
+                  <p className="mt-1 rounded-lg bg-bg p-3 text-sm leading-relaxed text-ink">
+                    {previewText || 'Pick a patient and date to preview the message.'}
+                  </p>
+                )}
+                {previewNote && <p className="mt-1 text-xs text-ink-soft">{previewNote}</p>}
               </div>
             </div>
           )}

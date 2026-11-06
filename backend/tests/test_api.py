@@ -129,6 +129,168 @@ def test_reminder_create_list_and_patch_lifecycle(client):
     assert any(r["id"] == reminder["id"] for r in now_sent.json())
 
 
+def test_message_preview_matches_what_reminders_would_store(client):
+    """Anti-drift guarantee: preview text == the text POST /reminders saves
+    for the exact same inputs. If these ever diverge, the frontend preview
+    the doctor approves is lying about what the patient will receive."""
+    search = client.get("/patients", params={"search": "Ramesh"})
+    patient_id = search.json()[0]["id"]
+    follow_up_date = (date.today() + timedelta(days=14)).isoformat()
+
+    preview = client.post(
+        "/messages/preview",
+        json={
+            "patient_id": patient_id,
+            "follow_up_date": follow_up_date,
+            "visit_type": "follow_up",
+        },
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+    assert "message" in preview_body
+    assert "warnings" in preview_body
+
+    created = client.post(
+        "/reminders",
+        json={
+            "patient_id": patient_id,
+            "follow_up_date": follow_up_date,
+            "visit_type": "follow_up",
+            "doctor_seconds": 8.0,
+        },
+    )
+    assert created.status_code == 201
+
+    assert preview_body["message"] == created.json()["message"]
+
+
+def test_message_preview_matches_across_sunday_adjustment(client):
+    """Same anti-drift check, but with a date that lands on a Sunday, so
+    the shared Sunday->Monday adjustment must apply identically on both
+    paths for the messages to match."""
+    search = client.get("/patients", params={"search": "Ramesh"})
+    patient_id = search.json()[0]["id"]
+
+    today = date.today()
+    days_until_sunday = (6 - today.weekday()) % 7 or 7
+    sunday = today + timedelta(days=days_until_sunday)
+    follow_up_date = sunday.isoformat()
+
+    preview = client.post(
+        "/messages/preview",
+        json={
+            "patient_id": patient_id,
+            "follow_up_date": follow_up_date,
+            "visit_type": "report_review",
+        },
+    )
+    assert preview.status_code == 200
+
+    created = client.post(
+        "/reminders",
+        json={
+            "patient_id": patient_id,
+            "follow_up_date": follow_up_date,
+            "visit_type": "report_review",
+        },
+    )
+    assert created.status_code == 201
+
+    assert preview.json()["message"] == created.json()["message"]
+
+
+def test_message_preview_unknown_patient_returns_404(client):
+    r = client.post(
+        "/messages/preview",
+        json={
+            "patient_id": 99999,
+            "follow_up_date": date.today().isoformat(),
+            "visit_type": "follow_up",
+        },
+    )
+    assert r.status_code == 404
+
+
+def test_message_preview_bad_visit_type_returns_422(client):
+    search = client.get("/patients", params={"search": "Ramesh"})
+    patient_id = search.json()[0]["id"]
+
+    r = client.post(
+        "/messages/preview",
+        json={
+            "patient_id": patient_id,
+            "follow_up_date": date.today().isoformat(),
+            "visit_type": "not_a_real_visit_type",
+        },
+    )
+    assert r.status_code == 422
+
+
+def test_message_preview_bad_date_returns_422(client):
+    search = client.get("/patients", params={"search": "Ramesh"})
+    patient_id = search.json()[0]["id"]
+
+    r = client.post(
+        "/messages/preview",
+        json={
+            "patient_id": patient_id,
+            "follow_up_date": "not-a-date",
+            "visit_type": "follow_up",
+        },
+    )
+    assert r.status_code == 422
+
+
+def test_message_preview_is_read_only_and_creates_no_reminder(client):
+    search = client.get("/patients", params={"search": "Ramesh"})
+    patient_id = search.json()[0]["id"]
+
+    before = client.get("/reminders").json()
+
+    r = client.post(
+        "/messages/preview",
+        json={
+            "patient_id": patient_id,
+            "follow_up_date": date.today().isoformat(),
+            "visit_type": "routine_check",
+        },
+    )
+    assert r.status_code == 200
+
+    after = client.get("/reminders").json()
+    assert before == after
+
+
+def test_message_preview_suppresses_unsafe_patient_name(client):
+    """Regression test: a patient name that itself contains a blocked
+    medicine word (e.g. bad import/typo) must never leak that word into the
+    preview response. The endpoint still returns 200 (cosmetic, read-only)
+    but `message` must be suppressed to None, with warnings populated,
+    mirroring how /notes/parse suppresses message_preview on an unsafe
+    extraction - no 400 here, since this must never block the doctor's
+    Approve flow."""
+    with Session(db_module.engine) as session:
+        unsafe_patient = Patient(name="Paracetamol Sharma", phone="9000000099", age=45)
+        session.add(unsafe_patient)
+        session.commit()
+        session.refresh(unsafe_patient)
+        patient_id = unsafe_patient.id
+
+    r = client.post(
+        "/messages/preview",
+        json={
+            "patient_id": patient_id,
+            "follow_up_date": date.today().isoformat(),
+            "visit_type": "follow_up",
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["message"] is None
+    assert len(body["warnings"]) > 0
+    assert "paracetamol" not in r.text.lower()
+
+
 def test_reminder_create_rejects_unknown_patient(client):
     r = client.post(
         "/reminders",

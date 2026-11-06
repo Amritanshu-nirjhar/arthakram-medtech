@@ -213,6 +213,7 @@ Hi {first_name}, this is a reminder from {clinic_name}. {doctor_name} would like
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/notes/parse` | body `{text}` → `{candidates: [patients], follow_up_date, visit_type, message_preview, warnings, no_follow_up}` |
+| POST | `/messages/preview` | body `{patient_id, follow_up_date, visit_type}` → `{message, warnings}` — re-renders the preview server-side from the same fixed template after the doctor taps a chip (ambiguous name / missing date). The frontend must NEVER build patient message text itself. |
 | POST | `/reminders` | approve: body `{patient_id, follow_up_date, visit_type, doctor_seconds}` → creates reminder with status `approved` |
 | GET | `/reminders?status=` | receptionist queue |
 | PATCH | `/reminders/{id}` | update status (`sent`, `confirmed`, `visited`, `missed`) |

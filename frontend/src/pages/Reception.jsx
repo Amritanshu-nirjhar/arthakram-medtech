@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { VISIT_LABELS, getReminders, prettyDate, updateReminderStatus } from '../api.js'
+import Spinner from '../components/Spinner.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 
 const FILTERS = [
@@ -7,6 +8,12 @@ const FILTERS = [
   { value: 'week', label: 'This week' },
   { value: 'all', label: 'All' },
 ]
+
+const EMPTY_MESSAGES = {
+  today: 'Nothing due today.',
+  week: 'Nothing due this week.',
+  all: 'No follow-ups yet — approved reminders will show up here.',
+}
 
 function toISODate(d) {
   const y = d.getFullYear()
@@ -104,7 +111,12 @@ export default function Reception() {
       </div>
 
       <div className="mt-5 rounded-xl border border-line bg-surface">
-        {loading && <p className="p-6 text-center text-sm text-ink-soft">Loading the queue…</p>}
+        {loading && (
+          <div className="flex items-center justify-center gap-2 p-6 text-sm text-ink-soft" aria-live="polite">
+            <Spinner className="h-4 w-4" />
+            <span>Loading the queue…</span>
+          </div>
+        )}
 
         {!loading && error && (
           <div className="p-6 text-center text-sm text-warn">
@@ -116,7 +128,7 @@ export default function Reception() {
         )}
 
         {!loading && !error && visible.length === 0 && (
-          <p className="p-6 text-center text-sm text-ink-soft">No follow-ups in this range yet.</p>
+          <p className="p-6 text-center text-sm text-ink-soft">{EMPTY_MESSAGES[filter]}</p>
         )}
 
         {!loading && !error && visible.length > 0 && (
@@ -143,14 +155,20 @@ export default function Reception() {
 
                   <div className="flex flex-shrink-0 flex-wrap gap-2 sm:flex-col sm:items-stretch">
                     {r.status === 'approved' && (
-                      <button
-                        type="button"
-                        onClick={() => handleSend(r)}
-                        disabled={action.loading}
-                        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                      >
-                        {action.loading ? 'Opening…' : 'Send on WhatsApp'}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleSend(r)}
+                          disabled={action.loading || !r.patient_phone}
+                          title={!r.patient_phone ? 'No phone number on file' : undefined}
+                          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                        >
+                          {action.loading ? 'Opening…' : 'Send on WhatsApp'}
+                        </button>
+                        {!r.patient_phone && (
+                          <p className="text-xs text-warn sm:text-right">Add a phone number to send this.</p>
+                        )}
+                      </>
                     )}
                     {r.status === 'sent' && (
                       <>

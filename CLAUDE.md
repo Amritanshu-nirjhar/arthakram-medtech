@@ -21,7 +21,7 @@ A clinic tool: doctor speaks one line ("Ramesh Kumar, review after 2 weeks") →
 
 ## Commands (keep these up to date as the project is scaffolded)
 - Backend dev: `cd backend && uvicorn app.main:app --reload --port 8000`
-- Backend tests: `cd backend && pytest -q`
+- Backend tests: `cd backend && .venv/bin/pytest -q` (bare `pytest` may resolve to a system/Anaconda Python and fail with `ModuleNotFoundError: rapidfuzz`)
 - Reset + seed DB: `cd backend && python -m app.seed`
 - Frontend dev: `cd frontend && npm run dev` (port 5173)
 
